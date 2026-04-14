@@ -1,0 +1,18 @@
+{
+  "conflicts": [
+    {
+      "path": "src/config.xml",
+      "type": "property",
+      "status": "C",
+      "description": "property conflict",
+      "resolved": false
+    },
+    {
+      "path": "lib/",
+      "type": "property",
+      "status": "C",
+      "description": "property conflict",
+      "resolved": false
+    }
+  ]
+}

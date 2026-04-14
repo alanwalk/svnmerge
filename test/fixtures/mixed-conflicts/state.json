@@ -1,0 +1,33 @@
+{
+  "conflicts": [
+    {
+      "path": "src/app.ts",
+      "type": "text",
+      "status": "C",
+      "description": "content conflict",
+      "resolved": false
+    },
+    {
+      "path": "src/config.xml",
+      "type": "property",
+      "status": "C",
+      "description": "property conflict",
+      "resolved": false
+    },
+    {
+      "path": "old_folder",
+      "type": "tree",
+      "status": "C",
+      "description": "local delete, incoming edit upon merge",
+      "resolved": false
+    },
+    {
+      "path": "images/icon.png",
+      "type": "text",
+      "status": "C",
+      "description": "binary file conflict",
+      "resolved": false,
+      "isBinary": true
+    }
+  ]
+}

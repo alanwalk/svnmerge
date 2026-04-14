@@ -1,0 +1,37 @@
+{
+  "name": "Text Conflicts (Multiple Files)",
+  "description": "Multiple files with text content conflicts",
+  "revision": 1234,
+  "conflicts": [
+    {
+      "path": "src/utils/helper.ts",
+      "type": "text",
+      "status": "C",
+      "description": "Content conflict",
+      "resolved": false
+    },
+    {
+      "path": "src/components/Button.tsx",
+      "type": "text",
+      "status": "C",
+      "description": "Content conflict",
+      "resolved": false
+    },
+    {
+      "path": "src/services/api.ts",
+      "type": "text",
+      "status": "C",
+      "description": "Content conflict",
+      "resolved": false
+    },
+    {
+      "path": "README.md",
+      "type": "text",
+      "status": "C",
+      "description": "Content conflict",
+      "resolved": false
+    }
+  ],
+  "merges": [],
+  "commits": []
+}

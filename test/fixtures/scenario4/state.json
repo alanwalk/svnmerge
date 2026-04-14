@@ -1,0 +1,37 @@
+{
+  "name": "Binary File Conflicts",
+  "description": "Binary files with conflicts (images, PDFs, etc.)",
+  "revision": 1237,
+  "conflicts": [
+    {
+      "path": "assets/logo.png",
+      "type": "binary",
+      "status": "C",
+      "description": "Binary file conflict",
+      "resolved": false
+    },
+    {
+      "path": "docs/manual.pdf",
+      "type": "binary",
+      "status": "C",
+      "description": "Binary file conflict",
+      "resolved": false
+    },
+    {
+      "path": "resources/icon.ico",
+      "type": "binary",
+      "status": "C",
+      "description": "Binary file conflict",
+      "resolved": false
+    },
+    {
+      "path": "lib/native.so",
+      "type": "binary",
+      "status": "C",
+      "description": "Binary file conflict",
+      "resolved": false
+    }
+  ],
+  "merges": [],
+  "commits": []
+}

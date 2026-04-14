@@ -1,0 +1,18 @@
+{
+  "conflicts": [
+    {
+      "path": "old_folder",
+      "type": "tree",
+      "status": "C",
+      "description": "local delete, incoming edit upon merge",
+      "resolved": false
+    },
+    {
+      "path": "moved_file.ts",
+      "type": "tree",
+      "status": "C",
+      "description": "local edit, incoming delete upon merge",
+      "resolved": false
+    }
+  ]
+}

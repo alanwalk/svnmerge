@@ -1,0 +1,104 @@
+# SVN 合并工具配置示例
+
+# 工作目录（默认为当前目录）
+workspace: .
+
+# 源分支 URL（可选，也可通过命令行 -f 指定）
+from: ^/branches/feature-branch
+
+# 默认冲突解决策略
+# 可选值: theirs-full, mine-full, working, base, theirs-conflict, mine-conflict, skip, manual
+defaultStrategy: theirs-full
+
+# 忽略的路径（不参与合并）
+ignore:
+  - "temp/**/*"
+  - "*.tmp"
+  - "node_modules/**/*"
+
+# 日志输出目录（可选）
+output: ./logs
+
+# 冲突解决规则（按优先级从高到低匹配）
+conflictRules:
+  # 规则 1: 二进制文件
+  - name: binary-files
+    description: 二进制文件统一使用传入版本
+    match:
+      binary: true
+    strategy: theirs-full
+    priority: 100
+
+  # 规则 2: Tree 冲突
+  - name: tree-conflicts
+    description: Tree 冲突使用 working 策略
+    match:
+      types:
+        - tree
+    strategy: working
+    priority: 90
+
+  # 规则 3: 配置文件保留本地版本
+  - name: config-files
+    description: 配置文件保留本地修改
+    match:
+      paths:
+        - "config/**/*"
+        - "*.config.js"
+        - ".env*"
+    strategy: mine-full
+    priority: 80
+
+  # 规则 4: 图片文件
+  - name: image-files
+    description: 图片文件使用传入版本
+    match:
+      extensions:
+        - .png
+        - .jpg
+        - .jpeg
+        - .gif
+        - .svg
+    strategy: theirs-full
+    priority: 70
+
+  # 规则 5: 文档文件
+  - name: document-files
+    description: 文档文件保留本地版本
+    match:
+      extensions:
+        - .pdf
+        - .doc
+        - .docx
+    strategy: mine-full
+    priority: 60
+
+  # 规则 6: 核心代码需要手动处理
+  - name: critical-code
+    description: 核心代码文件需要手动审查
+    match:
+      paths:
+        - "src/core/**/*"
+        - "src/api/**/*"
+    strategy: manual
+    priority: 50
+
+  # 规则 7: 测试文件使用传入版本
+  - name: test-files
+    description: 测试文件使用传入版本
+    match:
+      paths:
+        - "**/*.test.ts"
+        - "**/*.spec.ts"
+        - "tests/**/*"
+    strategy: theirs-full
+    priority: 40
+
+  # 规则 8: 属性冲突
+  - name: property-conflicts
+    description: 属性冲突使用传入版本
+    match:
+      types:
+        - property
+    strategy: theirs-full
+    priority: 30

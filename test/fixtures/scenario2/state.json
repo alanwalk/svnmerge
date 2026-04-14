@@ -1,0 +1,30 @@
+{
+  "name": "Property Conflicts",
+  "description": "Files with property conflicts (svn:executable, svn:eol-style, etc.)",
+  "revision": 1235,
+  "conflicts": [
+    {
+      "path": "scripts/deploy.sh",
+      "type": "property",
+      "status": " C",
+      "description": "Property conflict on svn:executable",
+      "resolved": false
+    },
+    {
+      "path": "config/settings.ini",
+      "type": "property",
+      "status": " C",
+      "description": "Property conflict on svn:eol-style",
+      "resolved": false
+    },
+    {
+      "path": "docs/manual.txt",
+      "type": "property",
+      "status": " C",
+      "description": "Property conflict on svn:mime-type",
+      "resolved": false
+    }
+  ],
+  "merges": [],
+  "commits": []
+}

@@ -1,0 +1,44 @@
+{
+  "name": "Tree Conflicts",
+  "description": "Various tree conflict scenarios (delete/edit, edit/delete, etc.)",
+  "revision": 1236,
+  "conflicts": [
+    {
+      "path": "src/old-module.ts",
+      "type": "tree",
+      "status": "      C",
+      "description": "local file delete, incoming file edit upon merge",
+      "resolved": false
+    },
+    {
+      "path": "src/deprecated.ts",
+      "type": "tree",
+      "status": "      C",
+      "description": "local file edit, incoming file delete upon merge",
+      "resolved": false
+    },
+    {
+      "path": "lib/legacy",
+      "type": "tree",
+      "status": "      C",
+      "description": "local dir delete, incoming dir edit upon merge",
+      "resolved": false
+    },
+    {
+      "path": "src/moved-file.ts",
+      "type": "tree",
+      "status": "      C",
+      "description": "local file moved away, incoming file edit upon merge",
+      "resolved": false
+    },
+    {
+      "path": "config/old-config.json",
+      "type": "tree",
+      "status": "      C",
+      "description": "local file obstruction, incoming file add upon merge",
+      "resolved": false
+    }
+  ],
+  "merges": [],
+  "commits": []
+}

@@ -1,0 +1,25 @@
+{
+  "conflicts": [
+    {
+      "path": "src/file1.ts",
+      "type": "text",
+      "status": "C",
+      "description": "content conflict",
+      "resolved": false
+    },
+    {
+      "path": "src/file2.ts",
+      "type": "text",
+      "status": "C",
+      "description": "content conflict",
+      "resolved": false
+    },
+    {
+      "path": "docs/readme.md",
+      "type": "text",
+      "status": "C",
+      "description": "content conflict",
+      "resolved": false
+    }
+  ]
+}

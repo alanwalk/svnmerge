@@ -1,0 +1,209 @@
+#!/usr/bin/env node
+
+/**
+ * Mock SVN CLI for testing
+ *
+ * Usage:
+ *   Set TEST_SCENARIO environment variable to select scenario
+ *   Example: TEST_SCENARIO=text-conflicts node test/bin/svn status
+ */
+
+const fs = require('fs');
+const path = require('path');
+
+const FIXTURES_DIR = path.join(__dirname, '../fixtures');
+const scenario = process.env.TEST_SCENARIO || 'no-conflicts';
+const stateFile = path.join(FIXTURES_DIR, scenario, 'state.json');
+
+// Load scenario state
+let state = {};
+if (fs.existsSync(stateFile)) {
+  state = JSON.parse(fs.readFileSync(stateFile, 'utf-8'));
+}
+
+const args = process.argv.slice(2);
+const command = args[0];
+
+function saveState() {
+  const dir = path.dirname(stateFile);
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+  fs.writeFileSync(stateFile, JSON.stringify(state, null, 2));
+}
+
+function handleStatus() {
+  if (!state.conflicts || state.conflicts.length === 0) {
+    process.exit(0);
+    return;
+  }
+
+  const output = [];
+  for (const conflict of state.conflicts) {
+    if (conflict.resolved) continue;
+
+    switch (conflict.type) {
+      case 'text':
+        output.push(`C       ${conflict.path}`);
+        break;
+      case 'property':
+        output.push(` C      ${conflict.path}`);
+        break;
+      case 'tree':
+        output.push(`      > ${conflict.path}`);
+        output.push(`      >   ${conflict.description || 'local delete, incoming edit upon merge'}`);
+        break;
+    }
+  }
+
+  if (output.length > 0) {
+    console.log(output.join('\n'));
+  }
+  process.exit(0);
+}
+
+function handleResolve() {
+  const acceptIndex = args.indexOf('--accept');
+  if (acceptIndex === -1) {
+    console.error('svn: E205000: Try \'svn help resolve\' for more information');
+    process.exit(1);
+  }
+
+  const strategy = args[acceptIndex + 1];
+  const filepath = args[args.length - 1];
+
+  if (!state.conflicts) {
+    console.error(`svn: E155015: '${filepath}' is not in a state of conflict`);
+    process.exit(1);
+  }
+
+  const conflict = state.conflicts.find(c => c.path === filepath);
+  if (!conflict) {
+    console.error(`svn: E155015: '${filepath}' is not in a state of conflict`);
+    process.exit(1);
+  }
+
+  if (conflict.resolved) {
+    console.error(`svn: E155015: '${filepath}' is not in a state of conflict`);
+    process.exit(1);
+  }
+
+  conflict.resolved = true;
+  conflict.resolvedWith = strategy;
+  saveState();
+
+  console.log(`Resolved conflicted state of '${filepath}'`);
+  process.exit(0);
+}
+
+function handleMerge() {
+  const cIndex = args.indexOf('-c');
+  if (cIndex === -1) {
+    console.error('svn: E205000: Try \'svn help merge\' for more information');
+    process.exit(1);
+  }
+
+  const revision = args[cIndex + 1];
+  const url = args[args.length - 1];
+
+  console.log(`--- Merging r${revision} into '.':`);
+  console.log(`U    src/file1.ts`);
+  console.log(`C    src/file2.ts`);
+  console.log(`--- Recording mergeinfo for merge of r${revision} into '.':`);
+  console.log(` U   .`);
+
+  // Simulate creating conflicts
+  if (state.mergeConflicts && state.mergeConflicts[revision]) {
+    state.conflicts = state.mergeConflicts[revision];
+    saveState();
+  }
+
+  process.exit(0);
+}
+
+function handleUpdate() {
+  console.log("Updating '.':");
+  console.log('At revision 1234.');
+  process.exit(0);
+}
+
+function handleCommit() {
+  const mIndex = args.indexOf('-m');
+  if (mIndex === -1) {
+    console.error('svn: E205000: Try \'svn help commit\' for more information');
+    process.exit(1);
+  }
+
+  const message = args[mIndex + 1];
+
+  // Check for unresolved conflicts
+  if (state.conflicts && state.conflicts.some(c => !c.resolved)) {
+    console.error('svn: E155015: Commit failed (details follow):');
+    console.error('svn: E155015: Aborting commit: \'src/file2.ts\' remains in conflict');
+    process.exit(1);
+  }
+
+  console.log('Sending        src/file1.ts');
+  console.log('Sending        src/file2.ts');
+  console.log('Transmitting file data ..');
+  console.log('Committed revision 1235.');
+
+  // Reset state after commit
+  state.conflicts = [];
+  saveState();
+
+  process.exit(0);
+}
+
+function handleInfo() {
+  const filepath = args[1];
+
+  if (!filepath) {
+    console.error('svn: E205000: Try \'svn help info\' for more information');
+    process.exit(1);
+  }
+
+  const conflict = state.conflicts?.find(c => c.path === filepath);
+
+  console.log(`Path: ${filepath}`);
+  console.log('Name: ' + path.basename(filepath));
+  console.log('Working Copy Root Path: /Users/test/repo');
+  console.log('URL: file:///svn/repo/trunk/' + filepath);
+  console.log('Relative URL: ^/trunk/' + filepath);
+  console.log('Repository Root: file:///svn/repo');
+  console.log('Repository UUID: 12345678-1234-1234-1234-123456789abc');
+  console.log('Revision: 1234');
+  console.log('Node Kind: file');
+  console.log('Schedule: normal');
+
+  if (conflict && !conflict.resolved) {
+    console.log('Conflict Properties: ' + conflict.type);
+  }
+
+  process.exit(0);
+}
+
+// Route commands
+switch (command) {
+  case 'status':
+    handleStatus();
+    break;
+  case 'resolve':
+    handleResolve();
+    break;
+  case 'merge':
+    handleMerge();
+    break;
+  case 'update':
+    handleUpdate();
+    break;
+  case 'commit':
+    handleCommit();
+    break;
+  case 'info':
+    handleInfo();
+    break;
+  default:
+    console.error(`svn: E205000: Unknown subcommand: '${command}'`);
+    process.exit(1);
+}

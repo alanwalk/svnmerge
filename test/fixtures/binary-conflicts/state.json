@@ -1,0 +1,20 @@
+{
+  "conflicts": [
+    {
+      "path": "images/logo.png",
+      "type": "text",
+      "status": "C",
+      "description": "binary file conflict",
+      "resolved": false,
+      "isBinary": true
+    },
+    {
+      "path": "docs/manual.pdf",
+      "type": "text",
+      "status": "C",
+      "description": "binary file conflict",
+      "resolved": false,
+      "isBinary": true
+    }
+  ]
+}
