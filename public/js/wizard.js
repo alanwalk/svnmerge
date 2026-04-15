@@ -16,8 +16,12 @@ const wizard = {
   init() {
     console.log('[Wizard] Initializing...');
 
-    // Check if workspace is selected
-    const workspace = state.get('workspace');
+    // Get workspace from URL parameter or localStorage
+    const urlParams = new URLSearchParams(window.location.search);
+    const workspaceFromUrl = urlParams.get('workspace');
+    const workspaceFromStorage = localStorage.getItem('selectedWorkspace');
+    const workspace = workspaceFromUrl || workspaceFromStorage;
+
     if (!workspace) {
       UIComponents.showModal(
         '未选择工作目录',
@@ -32,6 +36,9 @@ const wizard = {
       );
       return;
     }
+
+    // Save workspace to state
+    state.set('workspace', workspace);
 
     // Connect WebSocket
     this.connectWebSocket();
