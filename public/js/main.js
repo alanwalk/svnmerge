@@ -141,73 +141,6 @@ function displayCurrentWorkspace(workspacePath, repoInfo) {
   `;
 }
 
-// Load repository info
-async function loadRepoInfo() {
-  const workspace = state.get('workspace');
-  if (!workspace) {
-    UIComponents.showToast('请先选择工作目录', 'warning');
-    return;
-  }
-
-  const repoInfoEl = document.getElementById('repoInfo');
-  if (!repoInfoEl) return;
-
-  try {
-    repoInfoEl.innerHTML = `
-      <div style="text-align: center; padding: 20px;">
-        <div class="spinner"></div>
-        <div style="margin-top: 10px; color: var(--text-secondary);">加载中...</div>
-      </div>
-    `;
-
-    const data = await apiClient.getRepoInfo(workspace);
-
-    if (data.result) {
-      state.set('repoInfo', data.result);
-      displayRepoInfo(data.result);
-    } else {
-      throw new Error('无法获取仓库信息');
-    }
-  } catch (error) {
-    console.error('[App] Failed to load repo info:', error);
-    repoInfoEl.innerHTML = `
-      <div class="alert alert-danger">
-        <div class="alert-icon">✗</div>
-        <div class="alert-content">
-          <div class="alert-title">加载失败</div>
-          <div class="alert-message">${error.message}</div>
-        </div>
-      </div>
-    `;
-  }
-}
-
-// Display repository info
-function displayRepoInfo(info) {
-  const repoInfoEl = document.getElementById('repoInfo');
-  if (!repoInfoEl) return;
-
-  const workspace = state.get('workspace');
-  const absolutePath = workspace || info.path;
-
-  repoInfoEl.innerHTML = `
-    <div class="grid grid-2">
-      <div class="summary-item" style="grid-column: 1 / -1;">
-        <span class="summary-label">工作目录</span>
-        <span class="summary-value" style="font-family: monospace; font-size: 13px; word-break: break-all;">${absolutePath}</span>
-      </div>
-      <div class="summary-item">
-        <span class="summary-label">当前版本</span>
-        <span class="summary-value">r${info.revision}</span>
-      </div>
-      <div class="summary-item" style="grid-column: 1 / -1;">
-        <span class="summary-label">仓库 URL</span>
-        <span class="summary-value" style="font-family: monospace; font-size: 13px; word-break: break-all;">${info.url}</span>
-      </div>
-    </div>
-  `;
-}
-
 // Setup event listeners
 function setupEventListeners() {
   // Change workspace button
@@ -218,10 +151,18 @@ function setupEventListeners() {
     });
   }
 
-  // Refresh repo button
-  const refreshRepoBtn = document.getElementById('refreshRepoBtn');
-  if (refreshRepoBtn) {
-    refreshRepoBtn.addEventListener('click', loadRepoInfo);
+  // Start merge button
+  const startMergeBtn = document.getElementById('startMergeBtn');
+  if (startMergeBtn) {
+    startMergeBtn.addEventListener('click', () => {
+      const workspace = state.get('workspace');
+      if (workspace) {
+        // Navigate to merge wizard with workspace parameter
+        window.location.href = `merge-wizard.html?workspace=${encodeURIComponent(workspace)}`;
+      } else {
+        UIComponents.showToast('请先选择工作目录', 'warning');
+      }
+    });
   }
 
   // Check conflicts button
