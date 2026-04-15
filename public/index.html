@@ -26,11 +26,20 @@
         <h2 class="card-title">工作目录</h2>
       </div>
       <div class="card-body">
-        <div style="margin-bottom: 16px;">
+        <!-- 已添加的工作目录列表 -->
+        <div id="workspaceList" style="margin-bottom: 16px;">
+          <div class="empty-state" id="emptyWorkspaceState">
+            <div class="empty-state-icon">📂</div>
+            <div class="empty-state-message">暂无工作目录，请添加一个</div>
+          </div>
+        </div>
+
+        <!-- 添加工作目录表单 -->
+        <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border-color);">
           <label for="workspaceInput" style="display: block; margin-bottom: 8px; font-weight: 500;">
-            选择 SVN 工作目录
+            添加 SVN 工作目录
           </label>
-          <div style="display: flex; gap: 8px;">
+          <div style="display: flex; gap: 8px; margin-bottom: 8px;">
             <input
               type="text"
               id="workspaceInput"
@@ -38,9 +47,16 @@
               placeholder="输入 SVN 工作目录路径..."
               style="flex: 1;"
             />
-            <button id="validateWorkspaceBtn" class="btn btn-primary">验证</button>
+            <input
+              type="text"
+              id="workspaceNameInput"
+              class="input"
+              placeholder="名称（可选）"
+              style="width: 150px;"
+            />
+            <button id="addWorkspaceBtn" class="btn btn-primary">添加</button>
           </div>
-          <div id="workspaceStatus" style="margin-top: 8px; font-size: 14px;"></div>
+          <div id="workspaceStatus" style="font-size: 14px;"></div>
         </div>
       </div>
     </div>

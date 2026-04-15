@@ -36,12 +36,8 @@ async function init() {
     UIComponents.showToast('无法连接到服务器，请检查 daemon 是否运行', 'error', '', 0);
   });
 
-  // Load saved workspace from localStorage
-  const savedWorkspace = state.get('workspace');
-  if (savedWorkspace) {
-    document.getElementById('workspaceInput').value = savedWorkspace;
-    await validateWorkspace(savedWorkspace);
-  }
+  // Load workspaces
+  await loadWorkspaces();
 
   // Setup event listeners
   setupEventListeners();
@@ -67,6 +63,176 @@ function updateConnectionStatus(connected) {
       <span>未连接</span>
     `;
   }
+}
+
+// Load workspaces
+async function loadWorkspaces() {
+  try {
+    const data = await apiClient.getWorkspaces();
+    const workspaces = data.workspaces || [];
+
+    displayWorkspaces(workspaces);
+
+    // Auto-select the last used workspace
+    if (workspaces.length > 0) {
+      const lastUsed = workspaces
+        .filter(w => w.lastUsed)
+        .sort((a, b) => new Date(b.lastUsed) - new Date(a.lastUsed))[0];
+
+      if (lastUsed) {
+        await selectWorkspace(lastUsed);
+      }
+    }
+  } catch (error) {
+    console.error('[App] Failed to load workspaces:', error);
+  }
+}
+
+// Display workspaces
+function displayWorkspaces(workspaces) {
+  const listEl = document.getElementById('workspaceList');
+  const emptyState = document.getElementById('emptyWorkspaceState');
+
+  if (workspaces.length === 0) {
+    emptyState.style.display = 'block';
+    return;
+  }
+
+  emptyState.style.display = 'none';
+
+  listEl.innerHTML = workspaces.map(workspace => `
+    <div class="workspace-item" data-id="${workspace.id}">
+      <div class="workspace-info">
+        <div class="workspace-name">${workspace.name || workspace.path}</div>
+        <div class="workspace-path">${workspace.path}</div>
+        ${workspace.lastUsed ? `<div class="workspace-meta">最后使用: ${formatDate(workspace.lastUsed)}</div>` : ''}
+      </div>
+      <div class="workspace-actions">
+        <button class="btn btn-sm btn-primary select-workspace-btn" data-id="${workspace.id}" data-path="${workspace.path}">
+          选择
+        </button>
+        <button class="btn btn-sm btn-outline btn-danger delete-workspace-btn" data-id="${workspace.id}">
+          删除
+        </button>
+      </div>
+    </div>
+  `).join('');
+
+  // Add event listeners
+  document.querySelectorAll('.select-workspace-btn').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      const id = e.target.dataset.id;
+      const path = e.target.dataset.path;
+      const workspace = workspaces.find(w => w.id === id);
+      if (workspace) {
+        await selectWorkspace(workspace);
+      }
+    });
+  });
+
+  document.querySelectorAll('.delete-workspace-btn').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      const id = e.target.dataset.id;
+      await deleteWorkspace(id);
+    });
+  });
+}
+
+// Select workspace
+async function selectWorkspace(workspace) {
+  await validateWorkspace(workspace.path);
+}
+
+// Add workspace
+async function addWorkspace() {
+  const pathInput = document.getElementById('workspaceInput');
+  const nameInput = document.getElementById('workspaceNameInput');
+  const statusEl = document.getElementById('workspaceStatus');
+
+  const path = pathInput.value.trim();
+  const name = nameInput.value.trim();
+
+  if (!path) {
+    statusEl.innerHTML = '<span style="color: var(--danger);">✗ 请输入工作目录路径</span>';
+    return;
+  }
+
+  try {
+    statusEl.innerHTML = '<span style="color: var(--text-secondary);">⏳ 添加中...</span>';
+
+    await apiClient.addWorkspace(path, name || null);
+
+    statusEl.innerHTML = '<span style="color: var(--success);">✓ 添加成功</span>';
+    pathInput.value = '';
+    nameInput.value = '';
+
+    // Reload workspaces
+    await loadWorkspaces();
+
+    UIComponents.showToast('工作目录已添加', 'success');
+
+    // Clear status after 3 seconds
+    setTimeout(() => {
+      statusEl.innerHTML = '';
+    }, 3000);
+  } catch (error) {
+    console.error('[App] Failed to add workspace:', error);
+    statusEl.innerHTML = `<span style="color: var(--danger);">✗ ${error.message}</span>`;
+  }
+}
+
+// Delete workspace
+async function deleteWorkspace(id) {
+  if (!confirm('确定要删除这个工作目录吗？')) {
+    return;
+  }
+
+  try {
+    await apiClient.removeWorkspace(id);
+    UIComponents.showToast('工作目录已删除', 'success');
+
+    // Reload workspaces
+    await loadWorkspaces();
+
+    // Clear current workspace if it was deleted
+    const currentWorkspace = state.get('workspace');
+    if (currentWorkspace) {
+      const workspaces = (await apiClient.getWorkspaces()).workspaces || [];
+      const exists = workspaces.some(w => w.path === currentWorkspace);
+      if (!exists) {
+        state.set('workspace', null);
+        state.set('repoInfo', null);
+        document.getElementById('repoInfo').innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">📁</div>
+            <div class="empty-state-message">请先选择并验证工作目录</div>
+          </div>
+        `;
+        disableActions();
+      }
+    }
+  } catch (error) {
+    console.error('[App] Failed to delete workspace:', error);
+    UIComponents.showToast('删除失败: ' + error.message, 'error');
+  }
+}
+
+// Format date
+function formatDate(dateString) {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diff = now - date;
+
+  const minutes = Math.floor(diff / 60000);
+  const hours = Math.floor(diff / 3600000);
+  const days = Math.floor(diff / 86400000);
+
+  if (minutes < 1) return '刚刚';
+  if (minutes < 60) return `${minutes} 分钟前`;
+  if (hours < 24) return `${hours} 小时前`;
+  if (days < 7) return `${days} 天前`;
+
+  return date.toLocaleDateString('zh-CN');
 }
 
 // Validate workspace directory
@@ -206,13 +372,10 @@ function displayRepoInfo(info) {
 
 // Setup event listeners
 function setupEventListeners() {
-  // Validate workspace button
-  const validateWorkspaceBtn = document.getElementById('validateWorkspaceBtn');
-  if (validateWorkspaceBtn) {
-    validateWorkspaceBtn.addEventListener('click', () => {
-      const workspaceInput = document.getElementById('workspaceInput');
-      validateWorkspace(workspaceInput.value.trim());
-    });
+  // Add workspace button
+  const addWorkspaceBtn = document.getElementById('addWorkspaceBtn');
+  if (addWorkspaceBtn) {
+    addWorkspaceBtn.addEventListener('click', addWorkspace);
   }
 
   // Workspace input - Enter key
@@ -220,7 +383,7 @@ function setupEventListeners() {
   if (workspaceInput) {
     workspaceInput.addEventListener('keypress', (e) => {
       if (e.key === 'Enter') {
-        validateWorkspace(workspaceInput.value.trim());
+        addWorkspace();
       }
     });
   }

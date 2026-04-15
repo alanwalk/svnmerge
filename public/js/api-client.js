@@ -146,6 +146,21 @@ class APIClient {
   async getAllTasks() {
     return this.get('/api/tasks');
   }
+
+  // Get Workspaces
+  async getWorkspaces() {
+    return this.get('/api/workspaces');
+  }
+
+  // Add Workspace
+  async addWorkspace(path, name = null) {
+    return this.post('/api/workspaces', { path, name });
+  }
+
+  // Remove Workspace
+  async removeWorkspace(id) {
+    return this.request(`/api/workspaces/${id}`, { method: 'DELETE' });
+  }
 }
 
 // Export for use in other modules

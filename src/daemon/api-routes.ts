@@ -11,6 +11,13 @@ import {
   getRevisionsInfo,
   applyRevision
 } from '../utils/svn';
+import {
+  loadWorkspaces,
+  addWorkspace,
+  removeWorkspace,
+  updateWorkspaceLastUsedByPath,
+  WorkspaceConfig
+} from '../utils/workspace-config';
 
 /**
  * 创建 API 路由
@@ -29,6 +36,9 @@ export function createApiRoutes(taskManager: TaskManager): Router {
       const cwd = (req.query.cwd as string) || process.cwd();
 
       const { stdout } = await runSvnCommand('svn info', cwd);
+
+      // 更新工作目录的最后使用时间
+      updateWorkspaceLastUsedByPath(cwd);
 
       // 解析 svn info 输出 - 处理不同的换行符
       const rawInfo: any = {};
@@ -459,6 +469,54 @@ export function createApiRoutes(taskManager: TaskManager): Router {
   router.get('/tasks', (req: Request, res: Response) => {
     const tasks = taskManager.getAllTasks();
     res.json({ tasks });
+  });
+
+  /**
+   * 获取所有工作目录
+   */
+  router.get('/workspaces', (req: Request, res: Response) => {
+    try {
+      const workspaces = loadWorkspaces();
+      res.json({ workspaces });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  /**
+   * 添加工作目录
+   */
+  router.post('/workspaces', async (req: Request, res: Response) => {
+    const { path, name } = req.body;
+
+    if (!path) {
+      return res.status(400).json({ error: 'path is required' });
+    }
+
+    try {
+      const workspace = addWorkspace(path, name);
+      res.json({ workspace });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  /**
+   * 删除工作目录
+   */
+  router.delete('/workspaces/:id', (req: Request, res: Response) => {
+    const { id } = req.params;
+
+    try {
+      const success = removeWorkspace(id);
+      if (success) {
+        res.json({ success: true, message: 'Workspace removed' });
+      } else {
+        res.status(404).json({ error: 'Workspace not found' });
+      }
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
   });
 
   return router;
