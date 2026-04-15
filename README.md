@@ -73,6 +73,12 @@ npx svnmerge-daemon status
 
 **Web UI**: 在浏览器中打开 `http://localhost:36695/index.html` 使用图形界面
 
+**Windows 调试命令窗口**:
+- 默认会隐藏每次 SVN 子命令弹出的瞬时黑框。
+- 如果要看持续输出，先设置 `set SVNMERGE_DEBUG_CONSOLE=1` 再运行 `start-webui.bat`。
+- 这样会打开一个独立的 PowerShell 调试窗口，持续显示 Web UI 后台执行的 SVN 命令和输出。
+- 如果你就是想看系统原生的 `cmd.exe` 窗口弹出过程，可设置 `set SVNMERGE_SHOW_COMMAND_WINDOW=1`，但它仍然会按每条命令单独弹出，体验通常更差。
+
 **功能特性**:
 - 📋 直观的合并向导（6 步流程）
 - 🔍 版本选择和过滤（按作者、日期、提交信息）

@@ -1,9 +1,15 @@
 @echo off
 REM SVN Merge Tool - Web UI 启动脚本 (Windows)
 
+if "%SVNMERGE_DEBUG_CONSOLE%"=="" set "SVNMERGE_DEBUG_CONSOLE=0"
+if "%SVNMERGE_SHOW_COMMAND_WINDOW%"=="" set "SVNMERGE_SHOW_COMMAND_WINDOW=0"
+
 echo =========================================
 echo   SVN Merge Tool - Web UI
 echo =========================================
+echo.
+echo Debug Console: %SVNMERGE_DEBUG_CONSOLE%
+echo Native Cmd Window: %SVNMERGE_SHOW_COMMAND_WINDOW%
 echo.
 
 REM 检查 Node.js

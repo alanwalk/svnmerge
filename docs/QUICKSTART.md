@@ -14,6 +14,15 @@
 start-webui.bat
 ```
 
+Windows 如需查看后台执行的 SVN 命令，可先执行：
+
+```bat
+set SVNMERGE_DEBUG_CONSOLE=1
+start-webui.bat
+```
+
+这会额外打开一个持续输出的调试窗口。默认模式下，工具会隐藏每次 SVN 命令触发的一闪而过的黑框。
+
 **方式 B: 手动启动**
 
 ```bash

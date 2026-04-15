@@ -1,10 +1,67 @@
-import { exec } from 'child_process';
+import { exec, spawn } from 'child_process';
 import { promisify } from 'util';
 import { ConflictInfo, ConflictType } from '../types';
+import * as fs from 'fs';
+import * as os from 'os';
 import * as path from 'path';
 import { getGlobalCache } from './cache';
 
 const execAsync = promisify(exec);
+const DEBUG_CONFIG_DIR = path.join(os.homedir(), '.svnmerge');
+const DEBUG_LOG_FILE = path.join(DEBUG_CONFIG_DIR, 'svn-command-debug.log');
+let debugConsoleStarted = false;
+
+function isWindows(): boolean {
+  return process.platform === 'win32';
+}
+
+function shouldShowNativeCommandWindow(): boolean {
+  return isWindows() && process.env.SVNMERGE_SHOW_COMMAND_WINDOW === '1';
+}
+
+function shouldOpenDebugConsole(): boolean {
+  return isWindows() && process.env.SVNMERGE_DEBUG_CONSOLE === '1';
+}
+
+function appendDebugLog(message: string): void {
+  if (!shouldOpenDebugConsole()) {
+    return;
+  }
+
+  if (!fs.existsSync(DEBUG_CONFIG_DIR)) {
+    fs.mkdirSync(DEBUG_CONFIG_DIR, { recursive: true });
+  }
+
+  fs.appendFileSync(DEBUG_LOG_FILE, message, 'utf-8');
+}
+
+function ensureDebugConsole(): void {
+  if (!shouldOpenDebugConsole() || debugConsoleStarted) {
+    return;
+  }
+
+  if (!fs.existsSync(DEBUG_CONFIG_DIR)) {
+    fs.mkdirSync(DEBUG_CONFIG_DIR, { recursive: true });
+  }
+
+  if (!fs.existsSync(DEBUG_LOG_FILE)) {
+    fs.writeFileSync(DEBUG_LOG_FILE, '', 'utf-8');
+  }
+
+  const psPath = DEBUG_LOG_FILE.replace(/'/g, "''");
+  const command =
+    `$host.UI.RawUI.WindowTitle = 'SVN Merge Command Debug'; ` +
+    `Get-Content -LiteralPath '${psPath}' -Wait`;
+
+  const child = spawn('powershell.exe', ['-NoLogo', '-NoExit', '-Command', command], {
+    detached: true,
+    stdio: 'ignore',
+    windowsHide: false
+  });
+
+  child.unref();
+  debugConsoleStarted = true;
+}
 
 /**
  * 执行 SVN 命令
@@ -14,9 +71,41 @@ export async function runSvnCommand(
   cwd: string = process.cwd()
 ): Promise<{ stdout: string; stderr: string }> {
   try {
-    const { stdout, stderr } = await execAsync(command, { cwd });
+    ensureDebugConsole();
+
+    const startedAt = new Date().toISOString();
+    appendDebugLog(`[${startedAt}] $ ${command}\n`);
+
+    const { stdout, stderr } = await execAsync(command, {
+      cwd,
+      windowsHide: isWindows() && !shouldShowNativeCommandWindow()
+    });
+
+    if (stdout) {
+      appendDebugLog(`${stdout}${stdout.endsWith('\n') ? '' : '\n'}`);
+    }
+
+    if (stderr) {
+      appendDebugLog(`${stderr}${stderr.endsWith('\n') ? '' : '\n'}`);
+    }
+
+    appendDebugLog(`[${new Date().toISOString()}] exit 0\n\n`);
     return { stdout, stderr };
   } catch (error: any) {
+    const stdout = error.stdout || '';
+    const stderr = error.stderr || '';
+
+    if (stdout) {
+      appendDebugLog(`${stdout}${stdout.endsWith('\n') ? '' : '\n'}`);
+    }
+
+    if (stderr) {
+      appendDebugLog(`${stderr}${stderr.endsWith('\n') ? '' : '\n'}`);
+    }
+
+    appendDebugLog(
+      `[${new Date().toISOString()}] exit ${error.code ?? 'unknown'}: ${error.message}\n\n`
+    );
     throw new Error(`SVN command failed: ${error.message}`);
   }
 }
@@ -554,9 +643,9 @@ export async function applyRevision(
 ): Promise<void> {
   try {
     // 先检查冲突文件中是否有对应的版本
-    const { stdout } = await execAsync(`ls "${filepath}".r${revision} 2>/dev/null || true`, { cwd });
+    const revisionFile = path.join(cwd, `${filepath}.r${revision}`);
 
-    if (stdout.trim()) {
+    if (fs.existsSync(revisionFile)) {
       // 如果存在 .rXXX 文件，使用对应的策略
       await resolveConflict(filepath, 'theirs-full', cwd);
     } else {
@@ -567,8 +656,7 @@ export async function applyRevision(
       );
 
       // 写入文件
-      const fs = require('fs').promises;
-      await fs.writeFile(path.join(cwd, filepath), content);
+      await fs.promises.writeFile(path.join(cwd, filepath), content);
 
       // 标记为已解决
       await runSvnCommand(`svn resolve --accept working "${filepath}"`, cwd);
