@@ -78,6 +78,7 @@ export async function runSvnCommand(
 
     const { stdout, stderr } = await execAsync(command, {
       cwd,
+      shell: isWindows() ? 'cmd.exe' : '/bin/sh',
       windowsHide: isWindows() && !shouldShowNativeCommandWindow()
     });
 
