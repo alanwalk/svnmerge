@@ -76,11 +76,18 @@ export async function runSvnCommand(
     const startedAt = new Date().toISOString();
     appendDebugLog(`[${startedAt}] $ ${command}\n`);
 
-    const { stdout, stderr } = await execAsync(command, {
-      cwd,
-      shell: isWindows() ? 'cmd.exe' : '/bin/sh',
-      windowsHide: isWindows() && !shouldShowNativeCommandWindow()
-    });
+    // 构建 exec 选项
+    const execOptions: any = { cwd };
+
+    // Windows 特殊处理
+    if (isWindows()) {
+      execOptions.shell = true;
+      if (!shouldShowNativeCommandWindow()) {
+        execOptions.windowsHide = true;
+      }
+    }
+
+    const { stdout, stderr } = await execAsync(command, execOptions);
 
     if (stdout) {
       appendDebugLog(`${stdout}${stdout.endsWith('\n') ? '' : '\n'}`);
