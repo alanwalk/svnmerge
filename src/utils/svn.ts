@@ -1,4 +1,4 @@
-import { exec, spawn } from 'child_process';
+import { exec, spawn, ExecOptions } from 'child_process';
 import { promisify } from 'util';
 import { ConflictInfo, ConflictType } from '../types';
 import * as fs from 'fs';
@@ -7,6 +7,7 @@ import * as path from 'path';
 import { getGlobalCache } from './cache';
 
 const execAsync = promisify(exec);
+
 const DEBUG_CONFIG_DIR = path.join(os.homedir(), '.svnmerge');
 const DEBUG_LOG_FILE = path.join(DEBUG_CONFIG_DIR, 'svn-command-debug.log');
 let debugConsoleStarted = false;
@@ -76,20 +77,57 @@ export async function runSvnCommand(
     const startedAt = new Date().toISOString();
     appendDebugLog(`[${startedAt}] $ ${command}\n`);
 
+    // 检查目录是否存在
+    if (!fs.existsSync(cwd)) {
+      throw new Error(`Directory does not exist: ${cwd}`);
+    }
+
+    // 检查是否是目录
+    const stats = fs.statSync(cwd);
+    if (!stats.isDirectory()) {
+      throw new Error(`Path is not a directory: ${cwd}`);
+    }
+
     // 构建 exec 选项
     const execOptions: any = {
       cwd,
       encoding: 'utf8',
-      maxBuffer: 10 * 1024 * 1024 // 10MB buffer
+      maxBuffer: 10 * 1024 * 1024, // 10MB buffer
+      shell: true
     };
 
     // Windows 特殊处理
     if (isWindows()) {
-      // 明确指定使用 cmd.exe 的完整路径
-      execOptions.shell = process.env.ComSpec || 'C:\\Windows\\System32\\cmd.exe';
       if (!shouldShowNativeCommandWindow()) {
         execOptions.windowsHide = true;
       }
+
+      // 确保 PATH 包含常见的 SVN 安装路径
+      const commonSvnPaths = [
+        'C:\\Program Files\\TortoiseSVN\\bin',
+        'C:\\Program Files (x86)\\TortoiseSVN\\bin',
+        'C:\\Program Files\\SlikSvn\\bin',
+        'C:\\Program Files (x86)\\SlikSvn\\bin',
+        'C:\\Program Files\\CollabNet\\Subversion Client',
+        'C:\\Program Files (x86)\\CollabNet\\Subversion Client'
+      ];
+
+      // 检查这些路径是否存在，并添加到 PATH
+      const existingSvnPaths = commonSvnPaths.filter(p => {
+        try {
+          return fs.existsSync(p);
+        } catch {
+          return false;
+        }
+      });
+
+      // 创建新的环境变量，确保 SVN 路径在 PATH 中
+      execOptions.env = {
+        ...process.env,
+        PATH: existingSvnPaths.length > 0
+          ? `${existingSvnPaths.join(';')};${process.env.PATH || ''}`
+          : process.env.PATH || ''
+      };
     }
 
     const { stdout, stderr } = await execAsync(command, execOptions);

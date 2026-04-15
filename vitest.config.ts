@@ -23,9 +23,12 @@ export default defineConfig({
       ]
     }
   },
-  server: {
-    deps: {
-      external: ['node:sqlite']
+  resolve: {
+    alias: {
+      'node:sqlite': 'node:sqlite'
     }
+  },
+  optimizeDeps: {
+    exclude: ['node:sqlite']
   }
 });

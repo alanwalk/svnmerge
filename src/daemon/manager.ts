@@ -53,7 +53,8 @@ export class DaemonManager {
     // 打开日志文件
     const logFd = fs.openSync(this.logFile, 'a');
 
-    const child = spawn('node', [serverPath], {
+    // 使用 process.execPath 获取 node 的完整路径，确保在 Windows 上也能正常工作
+    const child = spawn(process.execPath, [serverPath], {
       detached: true,
       stdio: ['ignore', logFd, logFd]
     });

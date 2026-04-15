@@ -78,23 +78,51 @@ program
   .option('-n, --lines <number>', 'Number of lines to show', '50')
   .action(async (options) => {
     const logPath = manager.getLogPath();
-    const { spawn } = require('child_process');
+    const fs = require('fs');
+
+    if (!fs.existsSync(logPath)) {
+      console.error('Log file not found:', logPath);
+      process.exit(1);
+    }
 
     if (options.follow) {
-      // 使用 tail -f 跟踪日志
-      const tail = spawn('tail', ['-f', logPath], { stdio: 'inherit' });
+      // 跨平台的日志跟踪实现
+      console.log(`Following logs from: ${logPath}`);
+      console.log('Press Ctrl+C to stop\n');
+
+      // 先显示现有内容
+      const content = fs.readFileSync(logPath, 'utf-8');
+      process.stdout.write(content);
+
+      // 监听文件变化
+      let lastSize = fs.statSync(logPath).size;
+      const watcher = fs.watch(logPath, (eventType: string) => {
+        if (eventType === 'change') {
+          const currentSize = fs.statSync(logPath).size;
+          if (currentSize > lastSize) {
+            const stream = fs.createReadStream(logPath, {
+              start: lastSize,
+              end: currentSize
+            });
+            stream.on('data', (chunk: Buffer) => {
+              process.stdout.write(chunk);
+            });
+            lastSize = currentSize;
+          }
+        }
+      });
 
       process.on('SIGINT', () => {
-        tail.kill();
+        watcher.close();
         process.exit(0);
       });
     } else {
       // 显示最后 N 行
-      const tail = spawn('tail', ['-n', options.lines, logPath], { stdio: 'inherit' });
-
-      tail.on('close', (code: number) => {
-        process.exit(code);
-      });
+      const content = fs.readFileSync(logPath, 'utf-8');
+      const lines = content.split('\n');
+      const numLines = parseInt(options.lines, 10);
+      const lastLines = lines.slice(-numLines).join('\n');
+      console.log(lastLines);
     }
   });
 
