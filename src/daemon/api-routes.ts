@@ -30,10 +30,13 @@ export function createApiRoutes(taskManager: TaskManager): Router {
 
       const { stdout } = await runSvnCommand('svn info', cwd);
 
-      // 解析 svn info 输出
+      // 解析 svn info 输出 - 处理不同的换行符
       const rawInfo: any = {};
-      const lines = stdout.split('\n');
+      const lines = stdout.split(/\r?\n/); // 支持 \n 和 \r\n
+
       for (const line of lines) {
+        if (!line.trim()) continue; // 跳过空行
+
         const match = line.match(/^(.+?):\s*(.+)$/);
         if (match) {
           const key = match[1].trim();
@@ -44,8 +47,6 @@ export function createApiRoutes(taskManager: TaskManager): Router {
           rawInfo[key] = value; // 也保存原始 key
         }
       }
-
-      console.log('[API] svn info raw output keys:', Object.keys(rawInfo));
 
       // 标准化字段名（兼容不同语言的 svn info 输出）
       // 英文字段名
@@ -66,8 +67,6 @@ export function createApiRoutes(taskManager: TaskManager): Router {
         last_changed_date: rawInfo.last_changed_date || rawInfo['Last Changed Date'] || '',
         _raw: rawInfo // 调试用
       };
-
-      console.log('[API] Normalized info:', normalizedInfo);
 
       taskManager.completeTask(taskId, normalizedInfo);
       res.json({ taskId, status: 'completed', result: normalizedInfo });
