@@ -1,0 +1,42 @@
+# Source files
+src/
+test/
+*.ts
+!*.d.ts
+
+# Config files
+tsconfig.json
+vitest.config.ts
+playwright.config.ts
+
+# Test results
+test-results/
+playwright-report/
+coverage/
+
+# Development
+.vscode/
+.idea/
+*.log
+.DS_Store
+
+# Git
+.git/
+.gitignore
+.github/
+
+# Documentation (keep only README.md)
+docs/
+STATUS.md
+PROJECT_COMPLETION_SUMMARY.md
+
+# Scripts
+start-webui.sh
+start-webui.bat
+
+# Node modules
+node_modules/
+
+# Cache
+.cache/
+.claude/
