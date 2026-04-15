@@ -77,7 +77,10 @@ export async function runSvnCommand(
     appendDebugLog(`[${startedAt}] $ ${command}\n`);
 
     // 构建 exec 选项
-    const execOptions: any = { cwd };
+    const execOptions: any = {
+      cwd,
+      encoding: 'utf8'
+    };
 
     // Windows 特殊处理
     if (isWindows()) {
@@ -89,16 +92,20 @@ export async function runSvnCommand(
 
     const { stdout, stderr } = await execAsync(command, execOptions);
 
-    if (stdout) {
-      appendDebugLog(`${stdout}${stdout.endsWith('\n') ? '' : '\n'}`);
+    // 确保是字符串类型
+    const stdoutStr = String(stdout);
+    const stderrStr = String(stderr);
+
+    if (stdoutStr) {
+      appendDebugLog(`${stdoutStr}${stdoutStr.endsWith('\n') ? '' : '\n'}`);
     }
 
-    if (stderr) {
-      appendDebugLog(`${stderr}${stderr.endsWith('\n') ? '' : '\n'}`);
+    if (stderrStr) {
+      appendDebugLog(`${stderrStr}${stderrStr.endsWith('\n') ? '' : '\n'}`);
     }
 
     appendDebugLog(`[${new Date().toISOString()}] exit 0\n\n`);
-    return { stdout, stderr };
+    return { stdout: stdoutStr, stderr: stderrStr };
   } catch (error: any) {
     const stdout = error.stdout || '';
     const stderr = error.stderr || '';
