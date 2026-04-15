@@ -54,6 +54,9 @@ npm run build
 ```bash
 # 启动 daemon 服务
 npm run build
+./scripts/start-webui.sh
+
+# 或使用 daemon 命令
 npx svnmerge-daemon start
 
 # 服务器地址
