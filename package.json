@@ -1,5 +1,5 @@
 {
-  "name": "svn-merge-tool",
+  "name": "@alanwalk/svnmerge",
   "version": "2.0.0",
   "description": "Customizable SVN merge and conflict resolution tool",
   "main": "dist/index.js",
