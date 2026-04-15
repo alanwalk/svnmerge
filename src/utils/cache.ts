@@ -1,4 +1,4 @@
-import Database from 'better-sqlite3';
+import { DatabaseSync } from 'node:sqlite';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
@@ -28,7 +28,7 @@ export interface RevisionCacheEntry {
  * 全局 SQLite 缓存管理器
  */
 export class GlobalCache {
-  private db: Database.Database;
+  private db: DatabaseSync;
   private static instance: GlobalCache | null = null;
 
   private constructor() {
@@ -38,7 +38,7 @@ export class GlobalCache {
     }
 
     // 打开数据库
-    this.db = new Database(CACHE_DB_PATH);
+    this.db = new DatabaseSync(CACHE_DB_PATH);
     this.initTables();
   }
 
@@ -111,23 +111,19 @@ export class GlobalCache {
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
-    const transaction = this.db.transaction((entries: Omit<RevisionCacheEntry, 'cached_at'>[]) => {
-      const now = Date.now();
-      for (const entry of entries) {
-        stmt.run(
-          entry.repository_root,
-          entry.branch_path,
-          entry.revision,
-          entry.author,
-          entry.date,
-          entry.message,
-          entry.paths,
-          now
-        );
-      }
-    });
-
-    transaction(entries);
+    const now = Date.now();
+    for (const entry of entries) {
+      stmt.run(
+        entry.repository_root,
+        entry.branch_path,
+        entry.revision,
+        entry.author,
+        entry.date,
+        entry.message,
+        entry.paths,
+        now
+      );
+    }
   }
 
   /**
@@ -184,9 +180,9 @@ export class GlobalCache {
     const stmt = this.db.prepare(`
       DELETE FROM svn_revision_cache WHERE cached_at < ?
     `);
-    const result = stmt.run(cutoffTime);
+    const info = stmt.run(cutoffTime);
 
-    return result.changes;
+    return info.changes || 0;
   }
 
   /**
