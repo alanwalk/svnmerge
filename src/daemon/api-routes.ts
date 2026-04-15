@@ -31,18 +31,46 @@ export function createApiRoutes(taskManager: TaskManager): Router {
       const { stdout } = await runSvnCommand('svn info', cwd);
 
       // 解析 svn info 输出
-      const info: any = {};
+      const rawInfo: any = {};
       const lines = stdout.split('\n');
       for (const line of lines) {
         const match = line.match(/^(.+?):\s*(.+)$/);
         if (match) {
-          const key = match[1].trim().toLowerCase().replace(/\s+/g, '_');
-          info[key] = match[2].trim();
+          const key = match[1].trim();
+          const value = match[2].trim();
+          // 保存原始 key 和转换后的 key
+          const normalizedKey = key.toLowerCase().replace(/\s+/g, '_');
+          rawInfo[normalizedKey] = value;
+          rawInfo[key] = value; // 也保存原始 key
         }
       }
 
-      taskManager.completeTask(taskId, info);
-      res.json({ taskId, status: 'completed', result: info });
+      console.log('[API] svn info raw output keys:', Object.keys(rawInfo));
+
+      // 标准化字段名（兼容不同语言的 svn info 输出）
+      // 英文字段名
+      const path = rawInfo.path || rawInfo.working_copy_root_path || rawInfo['Working Copy Root Path'] || cwd;
+      const url = rawInfo.url || rawInfo.URL || '';
+      const repositoryRoot = rawInfo.repository_root || rawInfo['Repository Root'] || '';
+      const revision = rawInfo.revision || rawInfo.Revision || '';
+
+      const normalizedInfo = {
+        path,
+        url,
+        repository_root: repositoryRoot,
+        revision,
+        node_kind: rawInfo.node_kind || rawInfo['Node Kind'] || '',
+        schedule: rawInfo.schedule || rawInfo.Schedule || '',
+        last_changed_author: rawInfo.last_changed_author || rawInfo['Last Changed Author'] || '',
+        last_changed_rev: rawInfo.last_changed_rev || rawInfo['Last Changed Rev'] || '',
+        last_changed_date: rawInfo.last_changed_date || rawInfo['Last Changed Date'] || '',
+        _raw: rawInfo // 调试用
+      };
+
+      console.log('[API] Normalized info:', normalizedInfo);
+
+      taskManager.completeTask(taskId, normalizedInfo);
+      res.json({ taskId, status: 'completed', result: normalizedInfo });
     } catch (error: any) {
       taskManager.failTask(taskId, error.message);
       res.status(500).json({ taskId, status: 'failed', error: error.message });
