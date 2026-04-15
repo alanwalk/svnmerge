@@ -9,46 +9,55 @@
   <link rel="stylesheet" href="css/welcome.css">
 </head>
 <body>
-  <div class="welcome-container">
-    <div class="welcome-header">
-      <h1 class="welcome-title">SVN Merge Tool</h1>
-      <p class="welcome-subtitle">选择一个工作目录开始</p>
+  <div class="header">
+    <div class="header-content">
+      <h1>SVN Merge Tool</h1>
+      <div class="header-actions">
+        <div id="connectionStatus" class="connection-status disconnected">
+          <span class="status-dot"></span>
+          <span>未连接</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="welcome-intro">
+      <h2 class="welcome-intro-title">选择一个工作目录开始</h2>
     </div>
 
-    <div class="welcome-content">
-      <!-- 最近使用的工作目录 -->
-      <div id="recentWorkspaces" class="recent-workspaces">
-        <h2 class="section-title">最近使用</h2>
+    <!-- 最近使用的工作目录 -->
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">最近使用</h2>
+      </div>
+      <div class="card-body">
         <div id="recentWorkspaceList" class="workspace-list">
           <!-- 动态填充 -->
         </div>
       </div>
+    </div>
 
-      <!-- 展开查看更多 -->
-      <div id="allWorkspacesSection" class="all-workspaces-section" style="display: none;">
-        <h2 class="section-title">所有工作目录</h2>
+    <!-- 展开查看更多 -->
+    <div id="allWorkspacesSection" class="card" style="display: none;">
+      <div class="card-header">
+        <h2 class="card-title">所有工作目录</h2>
+      </div>
+      <div class="card-body">
         <div id="allWorkspaceList" class="workspace-list">
           <!-- 动态填充 -->
         </div>
       </div>
-
-      <!-- 操作按钮 -->
-      <div class="welcome-actions">
-        <button id="showAllBtn" class="btn btn-outline">
-          <span id="showAllBtnText">查看所有工作目录</span>
-        </button>
-        <button id="addNewBtn" class="btn btn-primary">
-          添加新工作目录
-        </button>
-      </div>
     </div>
 
-    <!-- 连接状态 -->
-    <div class="welcome-footer">
-      <div id="connectionStatus" class="connection-status disconnected">
-        <span class="status-dot"></span>
-        <span>未连接</span>
-      </div>
+    <!-- 操作按钮 -->
+    <div class="welcome-actions">
+      <button id="showAllBtn" class="btn btn-outline">
+        <span id="showAllBtnText">查看所有工作目录</span>
+      </button>
+      <button id="addNewBtn" class="btn btn-primary">
+        添加新工作目录
+      </button>
     </div>
   </div>
 

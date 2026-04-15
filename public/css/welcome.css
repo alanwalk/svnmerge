@@ -1,50 +1,14 @@
 /* SVN Merge Tool - Welcome Page Styles */
 
-.welcome-container {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  background: var(--light-bg);
-  padding: 0;
-}
-
-.welcome-header {
-  background: var(--white);
-  border-bottom: 1px solid var(--border-color);
-  padding: 40px 20px;
+.welcome-intro {
   text-align: center;
-}
-
-.welcome-title {
-  font-size: 32px;
-  font-weight: 600;
-  margin-bottom: 8px;
-  color: var(--text-primary);
-}
-
-.welcome-subtitle {
-  font-size: 16px;
-  color: var(--text-secondary);
-}
-
-.welcome-content {
-  max-width: 1200px;
-  width: 100%;
-  margin: 0 auto;
   padding: 40px 20px;
-  flex: 1;
 }
 
-.section-title {
-  font-size: 18px;
+.welcome-intro-title {
+  font-size: 24px;
   font-weight: 600;
   color: var(--text-primary);
-  margin-bottom: 16px;
-}
-
-/* Recent Workspaces List */
-.recent-workspaces {
-  margin-bottom: 40px;
 }
 
 .workspace-list {
@@ -57,7 +21,7 @@
   background: var(--white);
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius);
-  padding: 20px;
+  padding: 16px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -76,7 +40,7 @@
 }
 
 .workspace-list-name {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
   color: var(--text-primary);
   margin-bottom: 4px;
@@ -102,76 +66,24 @@
   margin-left: 20px;
 }
 
-/* All Workspaces Section */
-.all-workspaces-section {
-  margin-bottom: 40px;
-}
-
-/* Welcome Actions */
 .welcome-actions {
   display: flex;
   justify-content: center;
   gap: 16px;
-  margin-top: 40px;
+  margin-top: 20px;
+  margin-bottom: 40px;
 }
 
-/* Welcome Footer */
-.welcome-footer {
-  background: var(--white);
-  border-top: 1px solid var(--border-color);
-  padding: 20px;
-  text-align: center;
-}
-
-.welcome-footer .connection-status {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  background: var(--light-bg);
-  border-radius: 20px;
-  font-size: 14px;
-}
-
-.welcome-footer .connection-status.connected {
-  color: var(--success-color);
-}
-
-.welcome-footer .connection-status.disconnected {
-  color: var(--text-muted);
-}
-
-.welcome-footer .connection-status.connected .status-dot {
-  background: var(--success-color);
-}
-
-.welcome-footer .connection-status.disconnected .status-dot {
-  background: var(--text-muted);
-}
-
-.welcome-footer .status-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  animation: pulse 2s infinite;
-}
-
-/* Empty State in Welcome */
+/* Empty State */
 .workspace-list .empty-state {
-  background: var(--white);
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius);
-  padding: 60px 20px;
+  padding: 40px 20px;
+  text-align: center;
 }
 
 /* Responsive */
 @media (max-width: 768px) {
-  .welcome-title {
-    font-size: 24px;
-  }
-
-  .welcome-subtitle {
-    font-size: 14px;
+  .welcome-intro-title {
+    font-size: 20px;
   }
 
   .workspace-list-item {
@@ -195,14 +107,5 @@
 
   .welcome-actions .btn {
     width: 100%;
-  }
-}
-
-@keyframes pulse {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
   }
 }
