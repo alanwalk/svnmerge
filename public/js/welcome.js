@@ -105,10 +105,10 @@ function displayWorkspaces(workspaces) {
 
   // Show recent (top 3)
   const recentWorkspaces = sortedWorkspaces.slice(0, 3);
-  recentListEl.innerHTML = recentWorkspaces.map(workspace => createWorkspaceCard(workspace)).join('');
+  recentListEl.innerHTML = recentWorkspaces.map(workspace => createWorkspaceListItem(workspace, true)).join('');
 
   // Show all
-  allListEl.innerHTML = sortedWorkspaces.map(workspace => createWorkspaceListItem(workspace)).join('');
+  allListEl.innerHTML = sortedWorkspaces.map(workspace => createWorkspaceListItem(workspace, false)).join('');
 
   // Show/hide "show all" button
   document.getElementById('showAllBtn').style.display = workspaces.length > 3 ? 'inline-flex' : 'none';
@@ -117,27 +117,8 @@ function displayWorkspaces(workspaces) {
   attachWorkspaceEventListeners();
 }
 
-// Create workspace card for recent section
-function createWorkspaceCard(workspace) {
-  return `
-    <div class="workspace-card" data-id="${workspace.id}" data-path="${workspace.path}">
-      <div class="workspace-card-icon">📁</div>
-      <div class="workspace-card-content">
-        <div class="workspace-card-name">${workspace.name || workspace.path}</div>
-        <div class="workspace-card-path">${workspace.path}</div>
-        ${workspace.lastUsed ? `<div class="workspace-card-meta">最后使用: ${formatDate(workspace.lastUsed)}</div>` : ''}
-      </div>
-      <div class="workspace-card-actions">
-        <button class="btn btn-sm btn-outline btn-danger delete-workspace-btn" data-id="${workspace.id}" onclick="event.stopPropagation(); deleteWorkspace('${workspace.id}')">
-          删除
-        </button>
-      </div>
-    </div>
-  `;
-}
-
-// Create workspace list item for all section
-function createWorkspaceListItem(workspace) {
+// Create workspace list item
+function createWorkspaceListItem(workspace, isRecent) {
   return `
     <div class="workspace-list-item" data-id="${workspace.id}" data-path="${workspace.path}">
       <div class="workspace-list-info">
@@ -146,7 +127,6 @@ function createWorkspaceListItem(workspace) {
         ${workspace.lastUsed ? `<div class="workspace-list-meta">最后使用: ${formatDate(workspace.lastUsed)}</div>` : ''}
       </div>
       <div class="workspace-list-actions">
-        <button class="btn btn-sm btn-primary select-workspace-btn">选择</button>
         <button class="btn btn-sm btn-outline btn-danger delete-workspace-btn" data-id="${workspace.id}" onclick="event.stopPropagation(); deleteWorkspace('${workspace.id}')">
           删除
         </button>
@@ -157,26 +137,14 @@ function createWorkspaceListItem(workspace) {
 
 // Attach event listeners to workspace items
 function attachWorkspaceEventListeners() {
-  // Recent workspace cards
-  document.querySelectorAll('.workspace-card').forEach(card => {
-    card.addEventListener('click', (e) => {
+  // All workspace list items
+  document.querySelectorAll('.workspace-list-item').forEach(item => {
+    item.addEventListener('click', (e) => {
       if (!e.target.closest('.delete-workspace-btn')) {
-        const path = card.dataset.path;
+        const path = item.dataset.path;
         selectWorkspace(path);
       }
     });
-  });
-
-  // All workspace list items
-  document.querySelectorAll('.workspace-list-item').forEach(item => {
-    const selectBtn = item.querySelector('.select-workspace-btn');
-    if (selectBtn) {
-      selectBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const path = item.dataset.path;
-        selectWorkspace(path);
-      });
-    }
   });
 }
 

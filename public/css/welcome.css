@@ -4,110 +4,46 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 40px 20px;
+  background: var(--light-bg);
+  padding: 0;
 }
 
 .welcome-header {
+  background: var(--white);
+  border-bottom: 1px solid var(--border-color);
+  padding: 40px 20px;
   text-align: center;
-  color: var(--white);
-  margin-bottom: 40px;
 }
 
 .welcome-title {
-  font-size: 48px;
-  font-weight: 700;
-  margin-bottom: 12px;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  font-size: 32px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--text-primary);
 }
 
 .welcome-subtitle {
-  font-size: 18px;
-  opacity: 0.9;
+  font-size: 16px;
+  color: var(--text-secondary);
 }
 
 .welcome-content {
   max-width: 1200px;
   width: 100%;
   margin: 0 auto;
+  padding: 40px 20px;
   flex: 1;
 }
 
 .section-title {
-  font-size: 20px;
-  font-weight: 600;
-  color: var(--white);
-  margin-bottom: 20px;
-  opacity: 0.95;
-}
-
-/* Recent Workspaces Grid */
-.recent-workspaces {
-  margin-bottom: 40px;
-}
-
-.workspace-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 20px;
-}
-
-.workspace-card {
-  background: var(--white);
-  border-radius: var(--border-radius);
-  padding: 24px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  display: flex;
-  flex-direction: column;
-  position: relative;
-}
-
-.workspace-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
-}
-
-.workspace-card-icon {
-  font-size: 48px;
-  margin-bottom: 16px;
-  text-align: center;
-}
-
-.workspace-card-content {
-  flex: 1;
-}
-
-.workspace-card-name {
   font-size: 18px;
   font-weight: 600;
   color: var(--text-primary);
-  margin-bottom: 8px;
-  word-break: break-word;
+  margin-bottom: 16px;
 }
 
-.workspace-card-path {
-  font-family: monospace;
-  font-size: 13px;
-  color: var(--text-secondary);
-  margin-bottom: 8px;
-  word-break: break-all;
-}
-
-.workspace-card-meta {
-  font-size: 12px;
-  color: var(--text-muted);
-}
-
-.workspace-card-actions {
-  margin-top: 16px;
-  display: flex;
-  justify-content: flex-end;
-}
-
-/* All Workspaces List */
-.all-workspaces-section {
+/* Recent Workspaces List */
+.recent-workspaces {
   margin-bottom: 40px;
 }
 
@@ -119,17 +55,19 @@
 
 .workspace-list-item {
   background: var(--white);
+  border: 1px solid var(--border-color);
   border-radius: var(--border-radius);
   padding: 20px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   transition: all 0.2s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
 }
 
 .workspace-list-item:hover {
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  border-color: var(--primary-color);
+  box-shadow: 0 2px 8px rgba(0, 123, 255, 0.1);
 }
 
 .workspace-list-info {
@@ -164,6 +102,11 @@
   margin-left: 20px;
 }
 
+/* All Workspaces Section */
+.all-workspaces-section {
+  margin-bottom: 40px;
+}
+
 /* Welcome Actions */
 .welcome-actions {
   display: flex;
@@ -174,8 +117,10 @@
 
 /* Welcome Footer */
 .welcome-footer {
+  background: var(--white);
+  border-top: 1px solid var(--border-color);
+  padding: 20px;
   text-align: center;
-  margin-top: 40px;
 }
 
 .welcome-footer .connection-status {
@@ -183,18 +128,25 @@
   align-items: center;
   gap: 8px;
   padding: 8px 16px;
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--light-bg);
   border-radius: 20px;
-  color: var(--white);
   font-size: 14px;
 }
 
+.welcome-footer .connection-status.connected {
+  color: var(--success-color);
+}
+
+.welcome-footer .connection-status.disconnected {
+  color: var(--text-muted);
+}
+
 .welcome-footer .connection-status.connected .status-dot {
-  background: #4caf50;
+  background: var(--success-color);
 }
 
 .welcome-footer .connection-status.disconnected .status-dot {
-  background: #f44336;
+  background: var(--text-muted);
 }
 
 .welcome-footer .status-dot {
@@ -205,9 +157,9 @@
 }
 
 /* Empty State in Welcome */
-.workspace-grid .empty-state {
-  grid-column: 1 / -1;
+.workspace-list .empty-state {
   background: var(--white);
+  border: 1px solid var(--border-color);
   border-radius: var(--border-radius);
   padding: 60px 20px;
 }
@@ -215,15 +167,11 @@
 /* Responsive */
 @media (max-width: 768px) {
   .welcome-title {
-    font-size: 36px;
+    font-size: 24px;
   }
 
   .welcome-subtitle {
-    font-size: 16px;
-  }
-
-  .workspace-grid {
-    grid-template-columns: 1fr;
+    font-size: 14px;
   }
 
   .workspace-list-item {
