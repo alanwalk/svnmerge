@@ -12,6 +12,9 @@
     <div class="header-content">
       <h1>SVN Merge Tool</h1>
       <div class="header-actions">
+        <button id="changeWorkspaceBtn" class="btn btn-sm btn-outline" style="margin-right: 12px;">
+          切换工作目录
+        </button>
         <div id="connectionStatus" class="connection-status disconnected">
           <span class="status-dot"></span>
           <span>未连接</span>
@@ -23,40 +26,14 @@
   <div class="container">
     <div class="card">
       <div class="card-header">
-        <h2 class="card-title">工作目录</h2>
+        <h2 class="card-title">当前工作目录</h2>
       </div>
       <div class="card-body">
-        <!-- 已添加的工作目录列表 -->
-        <div id="workspaceList" style="margin-bottom: 16px;">
-          <div class="empty-state" id="emptyWorkspaceState">
-            <div class="empty-state-icon">📂</div>
-            <div class="empty-state-message">暂无工作目录，请添加一个</div>
+        <div id="currentWorkspace">
+          <div class="empty-state">
+            <div class="empty-state-icon">📁</div>
+            <div class="empty-state-message">加载中...</div>
           </div>
-        </div>
-
-        <!-- 添加工作目录表单 -->
-        <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border-color);">
-          <label for="workspaceInput" style="display: block; margin-bottom: 8px; font-weight: 500;">
-            添加 SVN 工作目录
-          </label>
-          <div style="display: flex; gap: 8px; margin-bottom: 8px;">
-            <input
-              type="text"
-              id="workspaceInput"
-              class="input"
-              placeholder="输入 SVN 工作目录路径..."
-              style="flex: 1;"
-            />
-            <input
-              type="text"
-              id="workspaceNameInput"
-              class="input"
-              placeholder="名称（可选）"
-              style="width: 150px;"
-            />
-            <button id="addWorkspaceBtn" class="btn btn-primary">添加</button>
-          </div>
-          <div id="workspaceStatus" style="font-size: 14px;"></div>
         </div>
       </div>
     </div>
@@ -84,7 +61,7 @@
         <p style="color: var(--text-secondary); margin-bottom: 20px;">
           使用合并向导来合并来自其他分支的变更。
         </p>
-        <a href="merge-wizard.html" class="btn btn-primary btn-lg" id="startMergeBtn" style="pointer-events: none; opacity: 0.5;">
+        <a href="merge-wizard.html" class="btn btn-primary btn-lg" id="startMergeBtn">
           启动合并向导
         </a>
       </div>
@@ -96,10 +73,10 @@
       </div>
       <div class="card-body">
         <div class="grid grid-2">
-          <button id="checkConflictsBtn" class="btn btn-outline" disabled>
+          <button id="checkConflictsBtn" class="btn btn-outline">
             检查冲突
           </button>
-          <button id="viewMergeInfoBtn" class="btn btn-outline" disabled>
+          <button id="viewMergeInfoBtn" class="btn btn-outline">
             查看 MergeInfo
           </button>
         </div>
