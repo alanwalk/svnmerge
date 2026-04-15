@@ -104,27 +104,6 @@ export function parseRevisions(revisionStr: string): string[] {
 export function createDefaultConfig(): Config {
   return {
     workspace: '.',
-    defaultStrategy: 'theirs-full' as any,
-    ignore: [],
-    conflictRules: [
-      {
-        name: 'binary-files',
-        description: '二进制文件使用 theirs-full',
-        match: {
-          binary: true
-        },
-        strategy: 'theirs-full' as any,
-        priority: 100
-      },
-      {
-        name: 'tree-conflicts',
-        description: 'Tree 冲突使用 working',
-        match: {
-          types: ['tree' as any]
-        },
-        strategy: 'working' as any,
-        priority: 90
-      }
-    ]
+    ignore: []
   };
 }

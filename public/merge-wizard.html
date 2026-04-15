@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>合并向导 - SVN Merge Tool</title>
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/wizard.css">
+</head>
+<body>
+  <div class="header">
+    <div class="header-content">
+      <h1>SVN Merge Tool - 合并向导</h1>
+      <div class="header-actions">
+        <div id="connectionStatus" class="connection-status disconnected">
+          <span class="status-dot"></span>
+          <span>未连接</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="container wizard-container">
+    <!-- Step Indicator -->
+    <div class="wizard-steps">
+      <div class="wizard-step active" data-step="1">
+        <div class="wizard-step-number">1</div>
+        <div class="wizard-step-label">选择合并类型</div>
+      </div>
+      <div class="wizard-step" data-step="2">
+        <div class="wizard-step-number">2</div>
+        <div class="wizard-step-label">配置源分支</div>
+      </div>
+      <div class="wizard-step" data-step="3">
+        <div class="wizard-step-number">3</div>
+        <div class="wizard-step-label">选择版本</div>
+      </div>
+      <div class="wizard-step" data-step="4">
+        <div class="wizard-step-number">4</div>
+        <div class="wizard-step-label">预览合并</div>
+      </div>
+      <div class="wizard-step" data-step="5">
+        <div class="wizard-step-number">5</div>
+        <div class="wizard-step-label">执行合并</div>
+      </div>
+      <div class="wizard-step" data-step="6">
+        <div class="wizard-step-number">6</div>
+        <div class="wizard-step-label">完成</div>
+      </div>
+    </div>
+
+    <!-- Wizard Content -->
+    <div class="wizard-content">
+      <!-- Step 1: Select Merge Type -->
+      <div id="step1" class="wizard-page active">
+        <h2 class="wizard-page-title">选择合并类型</h2>
+        <p class="wizard-page-description">请选择要执行的合并操作类型</p>
+
+        <div class="merge-type-options">
+          <label class="merge-type-option selected">
+            <input type="radio" name="mergeType" value="range" checked>
+            <div>
+              <div class="merge-type-title">合并版本范围</div>
+              <div class="merge-type-description">
+                从源分支合并一个或多个连续的版本范围。这是最常用的合并方式。
+              </div>
+            </div>
+          </label>
+
+          <label class="merge-type-option">
+            <input type="radio" name="mergeType" value="specific">
+            <div>
+              <div class="merge-type-title">合并特定版本 (Cherry-pick)</div>
+              <div class="merge-type-description">
+                从源分支选择特定的版本进行合并，可以跳过某些版本。
+              </div>
+            </div>
+          </label>
+        </div>
+
+        <div class="wizard-actions">
+          <div class="wizard-actions-left">
+            <a href="index.html" class="btn btn-secondary">取消</a>
+          </div>
+          <div class="wizard-actions-right">
+            <button class="btn btn-primary" onclick="wizard.nextStep()">下一步</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 2: Configure Source Branch -->
+      <div id="step2" class="wizard-page">
+        <h2 class="wizard-page-title">配置源分支</h2>
+        <p class="wizard-page-description">指定要合并的源分支路径</p>
+
+        <div class="form-group">
+          <label class="form-label">源分支路径</label>
+          <input type="text" id="branchPath" class="form-input" placeholder="/branches/feature-branch">
+          <div style="font-size: 13px; color: var(--text-secondary); margin-top: 6px;">
+            示例: /branches/feature-branch 或 /trunk
+          </div>
+        </div>
+
+        <div id="branchValidation" class="hidden"></div>
+
+        <div class="wizard-actions">
+          <div class="wizard-actions-left">
+            <button class="btn btn-secondary" onclick="wizard.prevStep()">上一步</button>
+          </div>
+          <div class="wizard-actions-right">
+            <button class="btn btn-primary" onclick="wizard.nextStep()">下一步</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 3: Select Revisions -->
+      <div id="step3" class="wizard-page">
+        <h2 class="wizard-page-title">选择版本</h2>
+        <p class="wizard-page-description">选择要合并的版本</p>
+
+        <div style="margin-bottom: 20px;">
+          <button id="loadRevisionsBtn" class="btn btn-primary">
+            显示日志
+          </button>
+        </div>
+
+        <!-- Filter Bar -->
+        <div id="filterBar" class="filter-bar hidden">
+          <div class="filter-row">
+            <div class="filter-group">
+              <label class="filter-label">作者</label>
+              <input type="text" id="filterAuthor" class="filter-input" placeholder="过滤作者">
+            </div>
+            <div class="filter-group">
+              <label class="filter-label">提交信息</label>
+              <input type="text" id="filterMessage" class="filter-input" placeholder="搜索提交信息">
+            </div>
+          </div>
+          <div class="filter-row">
+            <div class="filter-group">
+              <label class="filter-label">开始日期</label>
+              <input type="date" id="filterDateFrom" class="filter-input">
+            </div>
+            <div class="filter-group">
+              <label class="filter-label">结束日期</label>
+              <input type="date" id="filterDateTo" class="filter-input">
+            </div>
+          </div>
+          <div style="margin-top: 12px; display: flex; gap: 10px;">
+            <button id="applyFilterBtn" class="btn btn-sm btn-primary">应用过滤</button>
+            <button id="clearFilterBtn" class="btn btn-sm btn-outline">清除过滤</button>
+          </div>
+        </div>
+
+        <!-- Revision List -->
+        <div id="revisionListContainer" class="hidden">
+          <div style="margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
+            <div style="color: var(--text-secondary); font-size: 14px;">
+              已选择 <strong id="selectedCount">0</strong> 个版本
+            </div>
+            <div style="display: flex; gap: 10px;">
+              <button id="selectAllBtn" class="btn btn-sm btn-outline">全选</button>
+              <button id="deselectAllBtn" class="btn btn-sm btn-outline">取消全选</button>
+            </div>
+          </div>
+          <div id="revisionList" class="revision-list"></div>
+        </div>
+
+        <div class="wizard-actions">
+          <div class="wizard-actions-left">
+            <button class="btn btn-secondary" onclick="wizard.prevStep()">上一步</button>
+          </div>
+          <div class="wizard-actions-right">
+            <button id="nextToPreviewBtn" class="btn btn-primary" onclick="wizard.nextStep()" disabled>
+              下一步
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 4: Preview Merge -->
+      <div id="step4" class="wizard-page">
+        <h2 class="wizard-page-title">预览合并</h2>
+        <p class="wizard-page-description">确认要合并的版本</p>
+
+        <div id="previewContent"></div>
+
+        <div class="wizard-actions">
+          <div class="wizard-actions-left">
+            <button class="btn btn-secondary" onclick="wizard.prevStep()">上一步</button>
+          </div>
+          <div class="wizard-actions-right">
+            <button class="btn btn-success btn-lg" onclick="wizard.startMerge()">
+              开始合并
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 5: Execute Merge -->
+      <div id="step5" class="wizard-page">
+        <h2 class="wizard-page-title">执行合并</h2>
+        <p class="wizard-page-description">正在合并版本...</p>
+
+        <div style="margin-bottom: 30px;">
+          <div class="progress-bar">
+            <div id="mergeProgressFill" class="progress-fill" style="width: 0%">0%</div>
+          </div>
+          <div id="mergeProgressMessage" style="margin-top: 10px; color: var(--text-secondary); font-size: 14px;">
+            准备开始...
+          </div>
+        </div>
+
+        <ul id="mergeProgressList" class="merge-progress-list"></ul>
+
+        <div class="wizard-actions">
+          <div class="wizard-actions-left">
+            <button id="cancelMergeBtn" class="btn btn-danger">取消合并</button>
+          </div>
+          <div class="wizard-actions-right">
+            <button id="continueAfterMergeBtn" class="btn btn-primary hidden" onclick="wizard.afterMerge()">
+              继续
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 6: Complete -->
+      <div id="step6" class="wizard-page">
+        <h2 class="wizard-page-title">完成</h2>
+        <p class="wizard-page-description">合并操作已完成</p>
+
+        <div id="completionContent"></div>
+
+        <div class="wizard-actions">
+          <div class="wizard-actions-left">
+            <a href="index.html" class="btn btn-secondary">返回首页</a>
+          </div>
+          <div class="wizard-actions-right">
+            <button id="commitBtn" class="btn btn-success hidden">
+              提交更改
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/components.js"></script>
+  <script src="js/websocket-client.js"></script>
+  <script src="js/api-client.js"></script>
+  <script src="js/state-manager.js"></script>
+  <script src="js/wizard.js"></script>
+</body>
+</html>

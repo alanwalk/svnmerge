@@ -1,6 +1,5 @@
-import { ConflictInfo, ConflictRule, ResolveStrategy, ResolveResult, Config } from '../types';
-import { getConflicts, resolveConflict } from '../utils/svn';
-import { getResolveStrategy, isBinaryFile } from '../utils/matcher';
+import { ConflictInfo, ResolveResult, Config } from '../types';
+import { getConflicts, resolveConflict, collectMergeInfoWithCache, getFileCompleteHistory, applyRevision, MergeInfoEntry } from '../utils/svn';
 import { Logger } from '../utils/logger';
 
 /**
@@ -16,9 +15,9 @@ export class ConflictResolver {
   }
 
   /**
-   * 解决所有冲突
+   * 使用 newest 策略解决所有冲突
    */
-  async resolveAll(cwd: string = process.cwd()): Promise<ResolveResult[]> {
+  async resolveAllWithNewest(cwd: string = process.cwd()): Promise<ResolveResult[]> {
     this.logger.section('扫描冲突');
 
     // 获取所有冲突
@@ -29,63 +28,17 @@ export class ConflictResolver {
       return [];
     }
 
-    // 标记二进制文件
-    for (const conflict of conflicts) {
-      conflict.isBinary = isBinaryFile(conflict.path);
-    }
+    this.logger.info(`\n发现 ${conflicts.length} 个冲突`);
 
-    // 统计冲突类型
-    const typeCount = new Map<string, number>();
-    for (const conflict of conflicts) {
-      const count = typeCount.get(conflict.type) || 0;
-      typeCount.set(conflict.type, count + 1);
-    }
-
-    this.logger.info(`\n发现 ${conflicts.length} 个冲突:`);
-    for (const [type, count] of typeCount) {
-      this.logger.info(`  - ${type}: ${count} 个`);
-    }
-
-    // 显示将要使用的策略
-    this.logger.subsection('冲突解决策略');
-    const strategyMap = new Map<ResolveStrategy, ConflictInfo[]>();
-
-    for (const conflict of conflicts) {
-      const strategy = getResolveStrategy(
-        conflict,
-        this.config.conflictRules || [],
-        this.config.defaultStrategy
-      );
-
-      if (!strategyMap.has(strategy)) {
-        strategyMap.set(strategy, []);
-      }
-      strategyMap.get(strategy)!.push(conflict);
-    }
-
-    for (const [strategy, items] of strategyMap) {
-      this.logger.info(`\n${strategy}: ${items.length} 个文件`);
-      if (this.config.verbose) {
-        for (const item of items) {
-          this.logger.info(`  - ${item.path}`);
-        }
-      }
-    }
-
-    // 询问确认
-    if (!this.config.dryRun) {
-      this.logger.subsection('确认');
-      // 在实际应用中，这里应该使用 readline 或类似库来获取用户输入
-      // 为了简化，这里假设用户确认
-      this.logger.info('将开始解决冲突...');
-    } else {
+    if (this.config.dryRun) {
       this.logger.info('\n[DRY RUN] 仅预览，不会实际执行');
     }
 
-    // 解决冲突
-    this.logger.section('解决冲突');
+    // 创建 mergeinfo 缓存
+    const mergeInfoCache = new Map<string, MergeInfoEntry[]>();
     const results: ResolveResult[] = [];
 
+    // 逐个处理冲突
     for (let i = 0; i < conflicts.length; i++) {
       const conflict = conflicts[i];
       this.logger.info(`\n[${i + 1}/${conflicts.length}] ${conflict.path}`);
@@ -95,68 +48,76 @@ export class ConflictResolver {
         this.logger.info(`  描述: ${conflict.description}`);
       }
 
-      if (conflict.isBinary) {
-        this.logger.info(`  检测: 二进制文件`);
+      if (this.config.dryRun) {
+        results.push({
+          success: true,
+          conflict,
+          message: '[DRY RUN] 跳过实际执行'
+        });
+        this.logger.info(`  ✓ [DRY RUN] 跳过实际执行`);
+        continue;
       }
 
-      const strategy = getResolveStrategy(
-        conflict,
-        this.config.conflictRules || [],
-        this.config.defaultStrategy
-      );
+      try {
+        // 1. 收集 mergeinfo（带缓存）
+        this.logger.info(`  正在分析 mergeinfo 和版本历史...`);
+        const allMergeInfo = await collectMergeInfoWithCache(
+          conflict.path,
+          cwd,
+          mergeInfoCache
+        );
 
-      this.logger.info(`  策略: ${strategy}`);
+        // 2. 一次性查询文件的完整历史
+        const fileHistory = await getFileCompleteHistory(
+          conflict.path,
+          allMergeInfo,
+          cwd
+        );
 
-      let result: ResolveResult;
+        // 3. 选择最新版本
+        const newest = fileHistory[0]; // 已按版本号降序排序
 
-      if (this.config.dryRun) {
-        result = {
-          success: true,
-          conflict,
-          strategy,
-          message: '[DRY RUN] 跳过实际执行'
-        };
-        this.logger.info(`  ✓ ${result.message}`);
-      } else if (strategy === ResolveStrategy.SKIP) {
-        result = {
-          success: true,
-          conflict,
-          strategy,
-          message: '跳过处理'
-        };
-        this.logger.info(`  ⊘ ${result.message}`);
-      } else if (strategy === ResolveStrategy.MANUAL) {
-        result = {
-          success: false,
-          conflict,
-          strategy,
-          message: '需要手动处理',
-          error: '此冲突被标记为需要手动处理'
-        };
-        this.logger.warn(`  ⚠ ${result.message}`);
-      } else {
-        try {
-          await resolveConflict(conflict.path, strategy, cwd);
-          result = {
+        if (newest) {
+          this.logger.info(`  找到 ${fileHistory.length} 个相关版本`);
+          if (this.config.verbose) {
+            for (const rev of fileHistory.slice(0, 5)) {
+              this.logger.info(`    - r${rev.revision} (${rev.branch}) by ${rev.author}`);
+            }
+            if (fileHistory.length > 5) {
+              this.logger.info(`    ... 还有 ${fileHistory.length - 5} 个版本`);
+            }
+          }
+
+          this.logger.info(`  选择最新版本: r${newest.revision} (${newest.branch})`);
+
+          // 4. 应用该版本
+          await applyRevision(conflict.path, newest.revision, cwd);
+
+          results.push({
             success: true,
             conflict,
-            strategy,
-            message: '已解决'
-          };
-          this.logger.info(`  ✓ ${result.message}`);
-        } catch (error: any) {
-          result = {
+            message: `已解决 (使用 r${newest.revision} from ${newest.branch})`
+          });
+          this.logger.info(`  ✓ 已解决`);
+        } else {
+          // 理论上不应该到这里，因为冲突文件一定有对应的版本
+          results.push({
             success: false,
             conflict,
-            strategy,
-            message: '解决失败',
-            error: error.message
-          };
-          this.logger.error(`  ✗ ${result.message}: ${error.message}`);
+            message: '处理失败',
+            error: '未找到任何版本（这不应该发生）'
+          });
+          this.logger.error(`  ✗ 未找到任何版本`);
         }
+      } catch (error: any) {
+        results.push({
+          success: false,
+          conflict,
+          message: '处理失败',
+          error: error.message
+        });
+        this.logger.error(`  ✗ 处理失败: ${error.message}`);
       }
-
-      results.push(result);
     }
 
     // 总结
@@ -167,8 +128,8 @@ export class ConflictResolver {
     this.logger.info(`✓ 成功: ${successCount}`);
     this.logger.info(`✗ 失败: ${failedCount}`);
 
-    const failed = results.filter(r => !r.success);
-    if (failed.length > 0) {
+    if (failedCount > 0) {
+      const failed = results.filter(r => !r.success);
       this.logger.subsection('失败的项目');
       for (const result of failed) {
         this.logger.error(`  - ${result.conflict.path} (${result.conflict.type})`);

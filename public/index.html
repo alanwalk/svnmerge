@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SVN Merge Tool</title>
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/components.css">
+</head>
+<body>
+  <div class="header">
+    <div class="header-content">
+      <h1>SVN Merge Tool</h1>
+      <div class="header-actions">
+        <div id="connectionStatus" class="connection-status disconnected">
+          <span class="status-dot"></span>
+          <span>未连接</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">仓库信息</h2>
+        <button id="refreshRepoBtn" class="btn btn-sm btn-outline">刷新</button>
+      </div>
+      <div class="card-body">
+        <div id="repoInfo">
+          <div class="empty-state">
+            <div class="empty-state-icon">📁</div>
+            <div class="empty-state-message">正在加载仓库信息...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">开始合并</h2>
+      </div>
+      <div class="card-body">
+        <p style="color: var(--text-secondary); margin-bottom: 20px;">
+          使用合并向导来合并来自其他分支的变更。
+        </p>
+        <a href="merge-wizard.html" class="btn btn-primary btn-lg">
+          启动合并向导
+        </a>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">快速操作</h2>
+      </div>
+      <div class="card-body">
+        <div class="grid grid-2">
+          <button id="checkConflictsBtn" class="btn btn-outline">
+            检查冲突
+          </button>
+          <button id="viewMergeInfoBtn" class="btn btn-outline">
+            查看 MergeInfo
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/components.js"></script>
+  <script src="js/websocket-client.js"></script>
+  <script src="js/api-client.js"></script>
+  <script src="js/state-manager.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

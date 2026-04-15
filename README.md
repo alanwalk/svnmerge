@@ -1,17 +1,38 @@
 # SVN Merge Tool - TypeScript 版本
 
-一个功能强大、可自定义冲突处理规则的 SVN 合并工具。
+一个智能的 SVN 合并工具，自动选择最新版本解决冲突。
 
 ## 特性
 
+### CLI 工具
 - ✅ 支持批量合并多个版本
-- ✅ 自动检测和解决冲突
-- ✅ 可自定义冲突处理规则（基于类型、路径、扩展名等）
+- ✅ 智能冲突解决：基于 mergeinfo 自动选择最新版本
 - ✅ 支持 YAML 配置文件
 - ✅ 灵活的命令行参数
 - ✅ 详细的日志记录
 - ✅ 预览模式（dry-run）
 - ✅ 自动提交选项
+
+### Web UI & API (NEW!)
+- ✅ 现代化 Web UI 界面（复刻 TortoiseSVN）
+- ✅ RESTful API 接口
+- ✅ WebSocket 实时通信
+- ✅ 异步任务管理
+- ✅ 全局 SQLite 缓存
+- ✅ 进度实时推送
+- ✅ 任务取消支持
+- ✅ 响应式设计，支持移动端
+
+## 核心功能：Newest 策略
+
+工具使用智能的 `newest` 策略解决所有冲突：
+
+1. **分析 mergeinfo**：向上递归收集所有父目录的 `svn:mergeinfo` 属性
+2. **查询版本历史**：一次性获取文件在所有已合并分支中的修改记录
+3. **选择最新版本**：自动选择版本号最大的那个版本
+4. **应用版本**：将选定的版本应用到冲突文件
+
+详细说明请参见 [NEWEST_STRATEGY.md](./docs/NEWEST_STRATEGY.md)
 
 ## 安装
 
@@ -19,6 +40,47 @@
 npm install
 npm run build
 ```
+
+## 使用方式
+
+### 方式 1: CLI 工具（命令行）
+
+传统的命令行工具，适合脚本和自动化场景。
+
+### 方式 2: Daemon + Web UI（推荐）
+
+后台服务 + Web 界面，提供更好的用户体验和实时反馈。
+
+```bash
+# 启动 daemon 服务
+npm run build
+npx svnmerge-daemon start
+
+# 服务器地址
+# HTTP API: http://localhost:36695
+# WebSocket: ws://localhost:36695/ws
+# Web UI: http://localhost:36695/index.html
+
+# 停止服务
+npx svnmerge-daemon stop
+
+# 查看状态
+npx svnmerge-daemon status
+```
+
+**Web UI**: 在浏览器中打开 `http://localhost:36695/index.html` 使用图形界面
+
+**功能特性**:
+- 📋 直观的合并向导（6 步流程）
+- 🔍 版本选择和过滤（按作者、日期、提交信息）
+- 📊 实时合并进度显示
+- ⚠️ 自动冲突检测和解决
+- 💾 状态持久化
+- 📱 响应式设计
+
+**API 文档**: 查看 [docs/API.md](./docs/API.md) 了解完整的 API 接口
+
+**WebSocket Demo**: 打开 `docs/websocket-demo.html` 查看实时演示
 
 ## 快速开始
 
@@ -44,58 +106,6 @@ output: ./logs
 verbose: true
 dryRun: false
 autoCommit: false
-
-# 默认策略
-defaultStrategy: theirs-full
-
-# 冲突解决规则
-conflictRules:
-  # 二进制文件规则
-  - name: binary-files
-    description: 二进制文件使用 theirs-full
-    match:
-      binary: true
-    strategy: theirs-full
-    priority: 100
-
-  # Tree 冲突规则
-  - name: tree-conflicts
-    description: Tree 冲突使用 working
-    match:
-      types:
-        - tree
-    strategy: working
-    priority: 90
-
-  # 特定路径规则
-  - name: config-files
-    description: 配置文件保留本地版本
-    match:
-      paths:
-        - "config/**/*"
-        - "*.config.js"
-    strategy: mine-full
-    priority: 80
-
-  # 特定扩展名规则
-  - name: image-files
-    description: 图片文件使用传入版本
-    match:
-      extensions:
-        - .png
-        - .jpg
-        - .gif
-    strategy: theirs-full
-    priority: 70
-
-  # 需要手动处理的文件
-  - name: critical-files
-    description: 关键文件需要手动处理
-    match:
-      paths:
-        - "src/core/**/*"
-    strategy: manual
-    priority: 60
 ```
 
 ### 3. 执行合并
@@ -158,73 +168,6 @@ npx svnmerge resolve
 npx svnmerge resolve -w /path/to/repo
 ```
 
-## 冲突解决策略
-
-支持以下策略：
-
-- `theirs-full` - 完全接受传入版本（from 分支）
-- `mine-full` - 完全接受本地版本
-- `working` - 使用工作副本当前状态
-- `base` - 使用基础版本
-- `theirs-conflict` - 仅冲突部分接受传入版本
-- `mine-conflict` - 仅冲突部分接受本地版本
-- `skip` - 跳过不处理
-- `manual` - 标记为需要手动处理
-
-## 规则匹配
-
-规则按优先级（priority）从高到低匹配，第一个匹配的规则将被应用。
-
-### 匹配条件
-
-- `types` - 冲突类型：`text`, `property`, `tree`, `binary`
-- `paths` - 路径模式（支持 glob）
-- `extensions` - 文件扩展名
-- `binary` - 是否为二进制文件
-
-### 示例规则
-
-```yaml
-conflictRules:
-  # 高优先级：关键文件手动处理
-  - name: critical
-    match:
-      paths: ["src/core/**/*"]
-    strategy: manual
-    priority: 100
-
-  # 中优先级：配置文件保留本地
-  - name: configs
-    match:
-      extensions: [".config.js", ".env"]
-    strategy: mine-full
-    priority: 50
-
-  # 低优先级：其他文本文件使用传入版本
-  - name: text-files
-    match:
-      types: [text]
-    strategy: theirs-full
-    priority: 10
-```
-
-## 配置文件查找
-
-工具会自动向上查找配置文件：
-
-1. 当前目录的 `svnmerge.yaml`
-2. 当前目录的 `svnmerge.yml`
-3. 当前目录的 `.svnmerge.yaml`
-4. 父目录中的同名文件（递归向上）
-
-## 日志
-
-如果指定了 `output` 目录，工具会生成带时间戳的日志文件：
-
-```
-logs/svnmerge-2026-04-14T10-30-00-000Z.log
-```
-
 ## 典型工作流程
 
 ### 场景 1：从主干合并到分支
@@ -236,7 +179,6 @@ npx svnmerge init
 # 2. 编辑 svnmerge.yaml
 # from: ^/trunk
 # revisions: ["1001", "1002", "1003"]
-# defaultStrategy: theirs-full
 
 # 3. 预览
 npx svnmerge --dry-run
@@ -258,11 +200,11 @@ svn commit -m "Merge r1001-r1003 from trunk"
 # 已经手动执行了 svn merge，现在有冲突
 svn merge ^/branches/feature
 
-# 使用工具解决冲突
+# 使用工具解决冲突（自动选择最新版本）
 npx svnmerge resolve
 
-# 或使用自定义配置
-npx svnmerge resolve -c my-rules.yaml
+# 检查结果
+svn status
 ```
 
 ### 场景 3：批量合并多个版本
@@ -275,75 +217,56 @@ npx svnmerge -f ^/trunk -r 1001-1050
 npx svnmerge -f ^/trunk -r 1001,1005,1010-1015,1020
 ```
 
-## 高级用法
+## 工作原理
 
-### 自定义复杂规则
+### Newest 策略的执行流程
+
+1. **扫描冲突**：检测所有冲突文件
+2. **收集 mergeinfo**：
+   - 从冲突文件所在目录开始
+   - 向上递归到仓库根目录
+   - 收集所有 `svn:mergeinfo` 属性
+   - 使用缓存避免重复查询
+3. **查询版本历史**：
+   - 对每个已合并的分支，一次性查询文件的完整历史
+   - 过滤出在 mergeinfo 范围内的版本
+4. **选择最新版本**：
+   - 按版本号降序排序
+   - 选择版本号最大的那个
+5. **应用版本**：
+   - 如果该版本在冲突文件中存在（.rXXX），使用对应策略
+   - 否则从仓库获取该版本的内容并应用
+
+## 配置文件示例
+
+### 基本配置
 
 ```yaml
-conflictRules:
-  # 组合条件：二进制 + 特定路径
-  - name: binary-assets
-    match:
-      binary: true
-      paths: ["assets/**/*"]
-    strategy: theirs-full
-    priority: 100
-
-  # 多个扩展名
-  - name: documents
-    match:
-      extensions: [".pdf", ".doc", ".docx"]
-    strategy: mine-full
-    priority: 90
-
-  # 特定类型 + 路径
-  - name: tree-in-libs
-    match:
-      types: [tree]
-      paths: ["lib/**/*"]
-    strategy: working
-    priority: 80
+workspace: .
+from: ^/branches/feature-branch
+revisions:
+  - "1001-1005"
+output: ./logs
+verbose: true
 ```
 
-### 编程方式使用
+### 完整配置
 
-```typescript
-import { MergeManager, Config, Logger } from 'svn-merge-tool';
-
-const config: Config = {
-  workspace: '/path/to/repo',
-  from: '^/branches/feature',
-  revisions: ['1001', '1002'],
-  defaultStrategy: 'theirs-full',
-  conflictRules: [
-    {
-      name: 'binary',
-      match: { binary: true },
-      strategy: 'theirs-full',
-      priority: 100
-    }
-  ]
-};
-
-const logger = new Logger({ verbose: true });
-const manager = new MergeManager(config, logger);
-
-await manager.execute();
+```yaml
+workspace: /path/to/working/copy
+from: ^/branches/feature-branch
+revisions:
+  - "1001"
+  - "1002"
+  - "1003-1010"
+output: ./logs
+ignore:
+  - "*.log"
+  - "temp/**/*"
+verbose: true
+dryRun: false
+autoCommit: false
 ```
-
-## 与 v1.0.9 的对比
-
-| 特性 | v1.0.9 (Go) | v2.0.0 (TypeScript) |
-|------|-------------|---------------------|
-| 命令行格式 | ✅ | ✅ |
-| YAML 配置 | ✅ | ✅ |
-| 批量合并 | ✅ | ✅ |
-| 自动解决冲突 | ✅ | ✅ |
-| 自定义规则 | ❌ | ✅ |
-| 规则优先级 | ❌ | ✅ |
-| Glob 路径匹配 | ❌ | ✅ |
-| 多种策略 | 部分 | ✅ |
-| 仅解决冲突模式 | ❌ | ✅ |
 
 ## 注意事项
 
@@ -351,14 +274,83 @@ await manager.execute();
 
 - 使用前请确保工作副本干净（无未提交更改）
 - 建议先使用 `--dry-run` 预览
-- 对于关键文件，建议使用 `manual` 策略手动处理
-- 处理完成后务必检查结果
+- 工具会自动选择最新版本，但建议在 verbose 模式下检查选择的版本是否符合预期
+- 处理完成后务必检查结果并运行测试
+
+## API 快速开始
+
+### 1. 启动 Daemon
+
+```bash
+npm run build
+npx svnmerge-daemon start
+```
+
+### 2. 测试 API
+
+```bash
+node test-api.js
+```
+
+### 3. 使用 API
+
+```javascript
+// 查询 revisions
+const response = await fetch('http://localhost:36695/api/revisions/query', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    branchPath: '/branches/feature',
+    limit: 50
+  })
+});
+const { taskId } = await response.json();
+
+// 通过 WebSocket 监听结果
+const ws = new WebSocket('ws://localhost:36695/ws');
+ws.onmessage = (event) => {
+  const message = JSON.parse(event.data);
+  if (message.taskId === taskId && message.type === 'complete') {
+    console.log('Revisions:', message.result.revisions);
+  }
+};
+```
+
+完整示例请查看 [docs/API.md](./docs/API.md)
+
+## 架构设计
+
+### CLI 模式
+```
+用户 → CLI → SVN 命令 → 输出结果
+```
+
+### Daemon 模式
+```
+Web UI → HTTP API → Task Manager → SVN 命令
+                         ↓
+                   WebSocket ← 实时推送进度
+```
+
+### 核心组件
+
+- **Task Manager**: 管理所有异步任务的生命周期
+- **WebSocket Manager**: 管理 WebSocket 连接和消息推送
+- **Global Cache**: 全局 SQLite 缓存，加速 revision 查询
+- **API Routes**: RESTful API 接口
 
 ## 系统要求
 
 - Node.js 16+
 - SVN 命令行工具
 - TypeScript 5.3+（开发）
+
+## 相关文档
+
+- [Web UI 使用指南](./public/README.md) - Web 界面使用说明
+- [API 文档](./docs/API.md) - 完整的 API 接口说明
+- [Newest 策略](./docs/NEWEST_STRATEGY.md) - 智能冲突解决原理
+- [Web UI 开发纲领](./.claude/WEBUI_GUIDELINES.md) - Web UI 开发指南
 
 ## License
 

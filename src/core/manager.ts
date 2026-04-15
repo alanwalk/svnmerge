@@ -54,7 +54,7 @@ export class MergeManager {
     }
 
     // 解决冲突
-    const results = await this.resolver.resolveAll(cwd);
+    const results = await this.resolver.resolveAllWithNewest(cwd);
 
     // 自动提交
     if (this.config.autoCommit && !this.config.dryRun) {

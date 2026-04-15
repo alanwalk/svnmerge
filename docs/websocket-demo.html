@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SVN Merge Tool - WebSocket Demo</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f5;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      color: #333;
+      margin-bottom: 20px;
+    }
+
+    .status {
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      font-weight: 500;
+    }
+
+    .status.connected {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+
+    .status.disconnected {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+
+    .panel {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .panel h2 {
+      color: #333;
+      margin-bottom: 15px;
+      font-size: 18px;
+    }
+
+    .form-group {
+      margin-bottom: 15px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 5px;
+      color: #555;
+      font-weight: 500;
+    }
+
+    input, textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 80px;
+      font-family: monospace;
+    }
+
+    button {
+      background: #007bff;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      transition: background 0.2s;
+    }
+
+    button:hover {
+      background: #0056b3;
+    }
+
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+
+    button.danger {
+      background: #dc3545;
+    }
+
+    button.danger:hover {
+      background: #c82333;
+    }
+
+    .log {
+      background: #1e1e1e;
+      color: #d4d4d4;
+      padding: 15px;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      max-height: 400px;
+      overflow-y: auto;
+      line-height: 1.5;
+    }
+
+    .log-entry {
+      margin-bottom: 5px;
+    }
+
+    .log-entry.info { color: #4fc3f7; }
+    .log-entry.success { color: #81c784; }
+    .log-entry.error { color: #e57373; }
+    .log-entry.warning { color: #ffb74d; }
+
+    .progress-bar {
+      width: 100%;
+      height: 30px;
+      background: #e9ecef;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 10px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: #007bff;
+      transition: width 0.3s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 500;
+      font-size: 12px;
+    }
+
+    .task-list {
+      list-style: none;
+    }
+
+    .task-item {
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .task-item.pending { background: #fff3cd; }
+    .task-item.running { background: #cfe2ff; }
+    .task-item.completed { background: #d1e7dd; }
+    .task-item.failed { background: #f8d7da; }
+    .task-item.cancelled { background: #e2e3e5; }
+
+    .task-info {
+      flex: 1;
+    }
+
+    .task-id {
+      font-family: monospace;
+      font-size: 12px;
+      color: #666;
+    }
+
+    .task-type {
+      font-weight: 500;
+      color: #333;
+    }
+
+    .task-status {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 3px;
+      font-size: 11px;
+      font-weight: 500;
+      text-transform: uppercase;
+      margin-left: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>SVN Merge Tool - WebSocket Demo</h1>
+
+    <div id="status" class="status disconnected">
+      ⚠️ Disconnected from server
+    </div>
+
+    <div class="panel">
+      <h2>🔍 Query Revisions</h2>
+      <div class="form-group">
+        <label>Branch Path:</label>
+        <input type="text" id="branchPath" value="/branches/feature" placeholder="/branches/feature">
+      </div>
+      <div class="form-group">
+        <label>Limit:</label>
+        <input type="number" id="limit" value="50" min="1" max="1000">
+      </div>
+      <button onclick="queryRevisions()">Query Revisions</button>
+    </div>
+
+    <div class="panel">
+      <h2>🔀 Start Merge</h2>
+      <div class="form-group">
+        <label>Branch Path:</label>
+        <input type="text" id="mergeBranchPath" value="/branches/feature" placeholder="/branches/feature">
+      </div>
+      <div class="form-group">
+        <label>Revisions (comma-separated):</label>
+        <input type="text" id="mergeRevisions" value="12345,12346,12347" placeholder="12345,12346,12347">
+      </div>
+      <button onclick="startMerge()">Start Merge</button>
+      <button class="danger" onclick="cancelTask()" id="cancelBtn" disabled>Cancel</button>
+    </div>
+
+    <div class="panel">
+      <h2>📊 Current Task Progress</h2>
+      <div id="progressContainer" style="display: none;">
+        <div class="progress-bar">
+          <div class="progress-fill" id="progressFill">0%</div>
+        </div>
+        <div id="progressMessage" style="color: #666; font-size: 14px;">Waiting...</div>
+      </div>
+      <div id="noProgress" style="color: #999;">No active task</div>
+    </div>
+
+    <div class="panel">
+      <h2>📋 Active Tasks</h2>
+      <ul class="task-list" id="taskList">
+        <li style="color: #999;">No tasks yet</li>
+      </ul>
+    </div>
+
+    <div class="panel">
+      <h2>📝 Event Log</h2>
+      <button onclick="clearLog()" style="margin-bottom: 10px;">Clear Log</button>
+      <div class="log" id="log"></div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = 'http://localhost:36695';
+    const WS_URL = 'ws://localhost:36695/ws';
+
+    let ws = null;
+    let currentTaskId = null;
+    let tasks = new Map();
+
+    // 连接 WebSocket
+    function connect() {
+      ws = new WebSocket(WS_URL);
+
+      ws.onopen = () => {
+        updateStatus(true);
+        log('Connected to daemon', 'success');
+      };
+
+      ws.onmessage = (event) => {
+        const message = JSON.parse(event.data);
+        handleMessage(message);
+      };
+
+      ws.onerror = (error) => {
+        log('WebSocket error: ' + error.message, 'error');
+      };
+
+      ws.onclose = () => {
+        updateStatus(false);
+        log('Disconnected from daemon', 'warning');
+        // 5 秒后重连
+        setTimeout(connect, 5000);
+      };
+    }
+
+    // 处理 WebSocket 消息
+    function handleMessage(message) {
+      log(`Received: ${message.type} for task ${message.taskId}`, 'info');
+
+      if (message.type === 'progress') {
+        updateProgress(message);
+        updateTask(message.taskId, 'running', message);
+      } else if (message.type === 'complete') {
+        log(`Task ${message.taskId} completed`, 'success');
+        hideProgress();
+        updateTask(message.taskId, 'completed', message);
+        if (message.taskId === currentTaskId) {
+          document.getElementById('cancelBtn').disabled = true;
+          currentTaskId = null;
+        }
+      } else if (message.type === 'error') {
+        log(`Task ${message.taskId} failed: ${message.error}`, 'error');
+        hideProgress();
+        updateTask(message.taskId, 'failed', message);
+        if (message.taskId === currentTaskId) {
+          document.getElementById('cancelBtn').disabled = true;
+          currentTaskId = null;
+        }
+      } else if (message.type === 'cancelled') {
+        log(`Task ${message.taskId} cancelled`, 'warning');
+        hideProgress();
+        updateTask(message.taskId, 'cancelled', message);
+        if (message.taskId === currentTaskId) {
+          document.getElementById('cancelBtn').disabled = true;
+          currentTaskId = null;
+        }
+      }
+    }
+
+    // 更新连接状态
+    function updateStatus(connected) {
+      const statusEl = document.getElementById('status');
+      if (connected) {
+        statusEl.className = 'status connected';
+        statusEl.textContent = '✓ Connected to daemon';
+      } else {
+        statusEl.className = 'status disconnected';
+        statusEl.textContent = '⚠️ Disconnected from server';
+      }
+    }
+
+    // 更新进度
+    function updateProgress(message) {
+      const container = document.getElementById('progressContainer');
+      const noProgress = document.getElementById('noProgress');
+      const fill = document.getElementById('progressFill');
+      const msg = document.getElementById('progressMessage');
+
+      container.style.display = 'block';
+      noProgress.style.display = 'none';
+
+      const percent = Math.round((message.current / message.total) * 100);
+      fill.style.width = percent + '%';
+      fill.textContent = percent + '%';
+      msg.textContent = message.message || 'Processing...';
+    }
+
+    // 隐藏进度
+    function hideProgress() {
+      const container = document.getElementById('progressContainer');
+      const noProgress = document.getElementById('noProgress');
+      container.style.display = 'none';
+      noProgress.style.display = 'block';
+    }
+
+    // 更新任务列表
+    function updateTask(taskId, status, data) {
+      tasks.set(taskId, { taskId, status, data });
+      renderTasks();
+    }
+
+    // 渲染任务列表
+    function renderTasks() {
+      const taskList = document.getElementById('taskList');
+      if (tasks.size === 0) {
+        taskList.innerHTML = '<li style="color: #999;">No tasks yet</li>';
+        return;
+      }
+
+      taskList.innerHTML = '';
+      tasks.forEach((task) => {
+        const li = document.createElement('li');
+        li.className = `task-item ${task.status}`;
+        li.innerHTML = `
+          <div class="task-info">
+            <div class="task-type">${task.data.type || 'Task'} <span class="task-status">${task.status}</span></div>
+            <div class="task-id">${task.taskId}</div>
+          </div>
+        `;
+        taskList.appendChild(li);
+      });
+    }
+
+    // 日志
+    function log(message, type = 'info') {
+      const logEl = document.getElementById('log');
+      const entry = document.createElement('div');
+      entry.className = `log-entry ${type}`;
+      const timestamp = new Date().toLocaleTimeString();
+      entry.textContent = `[${timestamp}] ${message}`;
+      logEl.appendChild(entry);
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    // 清空日志
+    function clearLog() {
+      document.getElementById('log').innerHTML = '';
+    }
+
+    // 查询 revisions
+    async function queryRevisions() {
+      const branchPath = document.getElementById('branchPath').value;
+      const limit = parseInt(document.getElementById('limit').value);
+
+      try {
+        log(`Querying revisions for ${branchPath}...`, 'info');
+        const response = await fetch(`${API_BASE}/api/revisions/query`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ branchPath, limit })
+        });
+
+        const data = await response.json();
+        log(`Query started, task ID: ${data.taskId}`, 'success');
+        currentTaskId = data.taskId;
+        updateTask(data.taskId, 'pending', { type: 'revisions-query' });
+        document.getElementById('cancelBtn').disabled = false;
+      } catch (error) {
+        log(`Query failed: ${error.message}`, 'error');
+      }
+    }
+
+    // 开始合并
+    async function startMerge() {
+      const branchPath = document.getElementById('mergeBranchPath').value;
+      const revisionsStr = document.getElementById('mergeRevisions').value;
+      const revisions = revisionsStr.split(',').map(r => parseInt(r.trim())).filter(r => !isNaN(r));
+
+      if (revisions.length === 0) {
+        log('Please enter valid revisions', 'error');
+        return;
+      }
+
+      try {
+        log(`Starting merge for ${revisions.length} revisions...`, 'info');
+        const response = await fetch(`${API_BASE}/api/merge/start`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ branchPath, revisions })
+        });
+
+        const data = await response.json();
+        log(`Merge started, task ID: ${data.taskId}`, 'success');
+        currentTaskId = data.taskId;
+        updateTask(data.taskId, 'pending', { type: 'merge' });
+        document.getElementById('cancelBtn').disabled = false;
+      } catch (error) {
+        log(`Merge failed: ${error.message}`, 'error');
+      }
+    }
+
+    // 取消任务
+    async function cancelTask() {
+      if (!currentTaskId) return;
+
+      try {
+        log(`Cancelling task ${currentTaskId}...`, 'warning');
+        const response = await fetch(`${API_BASE}/api/merge/cancel`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ taskId: currentTaskId })
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          log('Task cancelled', 'success');
+        }
+      } catch (error) {
+        log(`Cancel failed: ${error.message}`, 'error');
+      }
+    }
+
+    // 启动时连接
+    connect();
+  </script>
+</body>
+</html>

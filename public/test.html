@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Web UI 测试 - SVN Merge Tool</title>
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/components.css">
+  <style>
+    .test-section {
+      margin-bottom: 30px;
+      padding: 20px;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .test-section h3 {
+      margin-bottom: 15px;
+      color: #333;
+    }
+    .test-buttons {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-content">
+      <h1>Web UI 组件测试</h1>
+      <div class="header-actions">
+        <a href="index.html" class="btn btn-outline">返回首页</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="test-section">
+      <h3>1. 按钮组件</h3>
+      <div class="test-buttons">
+        <button class="btn btn-primary">Primary</button>
+        <button class="btn btn-success">Success</button>
+        <button class="btn btn-danger">Danger</button>
+        <button class="btn btn-secondary">Secondary</button>
+        <button class="btn btn-outline">Outline</button>
+        <button class="btn btn-primary" disabled>Disabled</button>
+      </div>
+    </div>
+
+    <div class="test-section">
+      <h3>2. Toast 通知</h3>
+      <div class="test-buttons">
+        <button class="btn btn-primary" onclick="testToast('success')">Success Toast</button>
+        <button class="btn btn-danger" onclick="testToast('error')">Error Toast</button>
+        <button class="btn btn-warning" onclick="testToast('warning')">Warning Toast</button>
+        <button class="btn btn-info" onclick="testToast('info')">Info Toast</button>
+      </div>
+    </div>
+
+    <div class="test-section">
+      <h3>3. Loading 加载</h3>
+      <div class="test-buttons">
+        <button class="btn btn-primary" onclick="testLoading()">显示 Loading</button>
+        <button class="btn btn-secondary" onclick="UIComponents.hideLoading()">隐藏 Loading</button>
+      </div>
+    </div>
+
+    <div class="test-section">
+      <h3>4. Modal 对话框</h3>
+      <div class="test-buttons">
+        <button class="btn btn-primary" onclick="testModal()">显示 Modal</button>
+        <button class="btn btn-success" onclick="testConfirm()">Confirm 对话框</button>
+        <button class="btn btn-info" onclick="testAlert()">Alert 对话框</button>
+      </div>
+    </div>
+
+    <div class="test-section">
+      <h3>5. Progress Bar 进度条</h3>
+      <div id="progressContainer"></div>
+      <div class="test-buttons" style="margin-top: 15px;">
+        <button class="btn btn-primary" onclick="testProgress()">测试进度条</button>
+      </div>
+    </div>
+
+    <div class="test-section">
+      <h3>6. Alert 提示</h3>
+      <div id="alertContainer"></div>
+      <div class="test-buttons" style="margin-top: 15px;">
+        <button class="btn btn-success" onclick="testAlertComponent('success')">Success Alert</button>
+        <button class="btn btn-danger" onclick="testAlertComponent('error')">Error Alert</button>
+        <button class="btn btn-warning" onclick="testAlertComponent('warning')">Warning Alert</button>
+        <button class="btn btn-info" onclick="testAlertComponent('info')">Info Alert</button>
+      </div>
+    </div>
+
+    <div class="test-section">
+      <h3>7. Badge 徽章</h3>
+      <div style="display: flex; gap: 10px; align-items: center;">
+        <span class="badge badge-primary">Primary</span>
+        <span class="badge badge-success">Success</span>
+        <span class="badge badge-danger">Danger</span>
+        <span class="badge badge-warning">Warning</span>
+        <span class="badge badge-info">Info</span>
+        <span class="badge badge-secondary">Secondary</span>
+      </div>
+    </div>
+
+    <div class="test-section">
+      <h3>8. Empty State 空状态</h3>
+      <div id="emptyStateContainer"></div>
+      <div class="test-buttons" style="margin-top: 15px;">
+        <button class="btn btn-primary" onclick="testEmptyState()">显示 Empty State</button>
+      </div>
+    </div>
+
+    <div class="test-section">
+      <h3>9. Skeleton Loading 骨架屏</h3>
+      <div id="skeletonContainer"></div>
+      <div class="test-buttons" style="margin-top: 15px;">
+        <button class="btn btn-primary" onclick="testSkeleton()">显示 Skeleton</button>
+        <button class="btn btn-secondary" onclick="clearSkeleton()">清除</button>
+      </div>
+    </div>
+
+    <div class="test-section">
+      <h3>10. WebSocket 连接测试</h3>
+      <div id="wsStatus" style="margin-bottom: 15px;">
+        <div class="alert alert-info">
+          <div class="alert-content">
+            <div class="alert-message">WebSocket 未连接</div>
+          </div>
+        </div>
+      </div>
+      <div class="test-buttons">
+        <button class="btn btn-primary" onclick="testWebSocket()">测试连接</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/components.js"></script>
+  <script src="js/websocket-client.js"></script>
+  <script src="js/api-client.js"></script>
+  <script src="js/state-manager.js"></script>
+
+  <script>
+    // Test functions
+    function testToast(type) {
+      const messages = {
+        success: '操作成功完成！',
+        error: '操作失败，请重试',
+        warning: '请注意检查输入',
+        info: '这是一条提示信息'
+      };
+      UIComponents.showToast(messages[type], type);
+    }
+
+    function testLoading() {
+      UIComponents.showLoading('正在加载数据...');
+      setTimeout(() => {
+        UIComponents.updateLoadingMessage('处理中，请稍候...');
+      }, 1500);
+    }
+
+    function testModal() {
+      UIComponents.showModal(
+        '测试对话框',
+        '<p>这是一个测试对话框的内容。</p><p>可以包含任意 HTML 内容。</p>',
+        {
+          confirmText: '确定',
+          cancelText: '取消',
+          onConfirm: () => {
+            UIComponents.showToast('点击了确定', 'success');
+          },
+          onCancel: () => {
+            UIComponents.showToast('点击了取消', 'info');
+          }
+        }
+      );
+    }
+
+    async function testConfirm() {
+      const result = await UIComponents.confirm('确定要执行此操作吗？', '确认操作');
+      UIComponents.showToast(result ? '用户确认' : '用户取消', result ? 'success' : 'info');
+    }
+
+    async function testAlert() {
+      await UIComponents.alert('这是一个提示信息', '提示');
+      UIComponents.showToast('Alert 已关闭', 'info');
+    }
+
+    function testProgress() {
+      const container = document.getElementById('progressContainer');
+      container.innerHTML = '';
+
+      const progress = UIComponents.createProgressBar(container, {
+        current: 0,
+        total: 100,
+        showPercentage: true
+      });
+
+      let current = 0;
+      const interval = setInterval(() => {
+        current += 5;
+        progress.update(current, 100);
+
+        if (current >= 100) {
+          clearInterval(interval);
+          progress.setType('success');
+          UIComponents.showToast('进度完成！', 'success');
+        }
+      }, 200);
+    }
+
+    function testAlertComponent(type) {
+      const container = document.getElementById('alertContainer');
+      container.innerHTML = '';
+
+      const messages = {
+        success: '操作成功完成！',
+        error: '发生错误，请检查输入',
+        warning: '警告：此操作不可撤销',
+        info: '提示：请先保存当前工作'
+      };
+
+      const titles = {
+        success: '成功',
+        error: '错误',
+        warning: '警告',
+        info: '提示'
+      };
+
+      const alert = UIComponents.createAlert(messages[type], type, titles[type]);
+      container.appendChild(alert);
+    }
+
+    function testEmptyState() {
+      const container = document.getElementById('emptyStateContainer');
+      container.innerHTML = '';
+
+      const emptyState = UIComponents.createEmptyState(
+        '没有找到任何数据',
+        '📭',
+        '刷新',
+        () => {
+          UIComponents.showToast('点击了刷新按钮', 'info');
+        }
+      );
+
+      container.appendChild(emptyState);
+    }
+
+    function testSkeleton() {
+      const container = document.getElementById('skeletonContainer');
+      container.innerHTML = '';
+
+      const skeleton = UIComponents.createSkeleton('card', 3);
+      container.appendChild(skeleton);
+    }
+
+    function clearSkeleton() {
+      const container = document.getElementById('skeletonContainer');
+      container.innerHTML = '';
+    }
+
+    async function testWebSocket() {
+      const statusEl = document.getElementById('wsStatus');
+      const wsClient = new WebSocketClient('ws://localhost:36695/ws');
+
+      statusEl.innerHTML = `
+        <div class="alert alert-info">
+          <div class="alert-content">
+            <div class="alert-message">正在连接...</div>
+          </div>
+        </div>
+      `;
+
+      try {
+        await wsClient.connect();
+
+        statusEl.innerHTML = `
+          <div class="alert alert-success">
+            <div class="alert-content">
+              <div class="alert-title">连接成功</div>
+              <div class="alert-message">WebSocket 已连接到 ws://localhost:36695/ws</div>
+            </div>
+          </div>
+        `;
+
+        UIComponents.showToast('WebSocket 连接成功', 'success');
+
+        // Test message
+        wsClient.on('message', (msg) => {
+          console.log('Received message:', msg);
+        });
+
+      } catch (error) {
+        statusEl.innerHTML = `
+          <div class="alert alert-danger">
+            <div class="alert-content">
+              <div class="alert-title">连接失败</div>
+              <div class="alert-message">${error.message}</div>
+            </div>
+          </div>
+        `;
+
+        UIComponents.showToast('WebSocket 连接失败', 'error');
+      }
+    }
+  </script>
+</body>
+</html>
