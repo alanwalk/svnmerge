@@ -79,12 +79,14 @@ export async function runSvnCommand(
     // 构建 exec 选项
     const execOptions: any = {
       cwd,
-      encoding: 'utf8'
+      encoding: 'utf8',
+      maxBuffer: 10 * 1024 * 1024 // 10MB buffer
     };
 
     // Windows 特殊处理
     if (isWindows()) {
-      execOptions.shell = true;
+      // 明确指定使用 cmd.exe 的完整路径
+      execOptions.shell = process.env.ComSpec || 'C:\\Windows\\System32\\cmd.exe';
       if (!shouldShowNativeCommandWindow()) {
         execOptions.windowsHide = true;
       }
