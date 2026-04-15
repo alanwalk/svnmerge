@@ -183,11 +183,14 @@ function displayRepoInfo(info) {
   const repoInfoEl = document.getElementById('repoInfo');
   if (!repoInfoEl) return;
 
+  const workspace = state.get('workspace');
+  const absolutePath = workspace || info.path;
+
   repoInfoEl.innerHTML = `
     <div class="grid grid-2">
-      <div class="summary-item">
+      <div class="summary-item" style="grid-column: 1 / -1;">
         <span class="summary-label">工作目录</span>
-        <span class="summary-value" style="font-family: monospace; font-size: 13px;">${info.path}</span>
+        <span class="summary-value" style="font-family: monospace; font-size: 13px; word-break: break-all;">${absolutePath}</span>
       </div>
       <div class="summary-item">
         <span class="summary-label">当前版本</span>
@@ -196,10 +199,6 @@ function displayRepoInfo(info) {
       <div class="summary-item" style="grid-column: 1 / -1;">
         <span class="summary-label">仓库 URL</span>
         <span class="summary-value" style="font-family: monospace; font-size: 13px; word-break: break-all;">${info.url}</span>
-      </div>
-      <div class="summary-item" style="grid-column: 1 / -1;">
-        <span class="summary-label">仓库根目录</span>
-        <span class="summary-value" style="font-family: monospace; font-size: 13px; word-break: break-all;">${info.repository_root}</span>
       </div>
     </div>
   `;
