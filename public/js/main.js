@@ -36,8 +36,12 @@ async function init() {
     UIComponents.showToast('无法连接到服务器，请检查 daemon 是否运行', 'error', '', 0);
   });
 
-  // Load repository info
-  await loadRepoInfo();
+  // Load saved workspace from localStorage
+  const savedWorkspace = state.get('workspace');
+  if (savedWorkspace) {
+    document.getElementById('workspaceInput').value = savedWorkspace;
+    await validateWorkspace(savedWorkspace);
+  }
 
   // Setup event listeners
   setupEventListeners();
@@ -65,8 +69,82 @@ function updateConnectionStatus(connected) {
   }
 }
 
+// Validate workspace directory
+async function validateWorkspace(workspacePath) {
+  const statusEl = document.getElementById('workspaceStatus');
+  const repoInfoEl = document.getElementById('repoInfo');
+
+  if (!workspacePath || workspacePath.trim() === '') {
+    statusEl.innerHTML = '<span style="color: var(--danger);">✗ 请输入工作目录路径</span>';
+    disableActions();
+    return;
+  }
+
+  try {
+    statusEl.innerHTML = '<span style="color: var(--text-secondary);">⏳ 验证中...</span>';
+
+    const data = await apiClient.getRepoInfo(workspacePath);
+
+    if (data.result) {
+      state.set('workspace', workspacePath);
+      state.set('repoInfo', data.result);
+
+      statusEl.innerHTML = '<span style="color: var(--success);">✓ 有效的 SVN 工作目录</span>';
+      displayRepoInfo(data.result);
+      enableActions();
+    } else {
+      throw new Error('无法获取仓库信息');
+    }
+  } catch (error) {
+    console.error('[App] Failed to validate workspace:', error);
+    statusEl.innerHTML = `<span style="color: var(--danger);">✗ ${error.message}</span>`;
+
+    repoInfoEl.innerHTML = `
+      <div class="alert alert-danger">
+        <div class="alert-icon">✗</div>
+        <div class="alert-content">
+          <div class="alert-title">验证失败</div>
+          <div class="alert-message">${error.message}</div>
+        </div>
+      </div>
+    `;
+
+    state.remove('workspace');
+    state.remove('repoInfo');
+    disableActions();
+  }
+}
+
+// Enable actions after workspace validation
+function enableActions() {
+  document.getElementById('refreshRepoBtn').disabled = false;
+  document.getElementById('checkConflictsBtn').disabled = false;
+  document.getElementById('viewMergeInfoBtn').disabled = false;
+
+  const startMergeBtn = document.getElementById('startMergeBtn');
+  startMergeBtn.style.pointerEvents = 'auto';
+  startMergeBtn.style.opacity = '1';
+}
+
+// Disable actions when no valid workspace
+function disableActions() {
+  document.getElementById('refreshRepoBtn').disabled = true;
+  document.getElementById('checkConflictsBtn').disabled = true;
+  document.getElementById('viewMergeInfoBtn').disabled = true;
+
+  const startMergeBtn = document.getElementById('startMergeBtn');
+  startMergeBtn.style.pointerEvents = 'none';
+  startMergeBtn.style.opacity = '0.5';
+}
+
 // Load repository info
 async function loadRepoInfo() {
+  const workspace = state.get('workspace');
+  if (!workspace) {
+    UIComponents.showToast('请先选择工作目录', 'warning');
+    return;
+  }
+
   const repoInfoEl = document.getElementById('repoInfo');
   if (!repoInfoEl) return;
 
@@ -78,7 +156,7 @@ async function loadRepoInfo() {
       </div>
     `;
 
-    const data = await apiClient.getRepoInfo();
+    const data = await apiClient.getRepoInfo(workspace);
 
     if (data.result) {
       state.set('repoInfo', data.result);
@@ -129,6 +207,25 @@ function displayRepoInfo(info) {
 
 // Setup event listeners
 function setupEventListeners() {
+  // Validate workspace button
+  const validateWorkspaceBtn = document.getElementById('validateWorkspaceBtn');
+  if (validateWorkspaceBtn) {
+    validateWorkspaceBtn.addEventListener('click', () => {
+      const workspaceInput = document.getElementById('workspaceInput');
+      validateWorkspace(workspaceInput.value.trim());
+    });
+  }
+
+  // Workspace input - Enter key
+  const workspaceInput = document.getElementById('workspaceInput');
+  if (workspaceInput) {
+    workspaceInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        validateWorkspace(workspaceInput.value.trim());
+      }
+    });
+  }
+
   // Refresh repo button
   const refreshRepoBtn = document.getElementById('refreshRepoBtn');
   if (refreshRepoBtn) {
@@ -150,10 +247,16 @@ function setupEventListeners() {
 
 // Check conflicts
 async function checkConflicts() {
+  const workspace = state.get('workspace');
+  if (!workspace) {
+    UIComponents.showToast('请先选择工作目录', 'warning');
+    return;
+  }
+
   try {
     UIComponents.showLoading('检查冲突中...');
 
-    const data = await apiClient.getConflicts();
+    const data = await apiClient.getConflicts(workspace);
 
     UIComponents.hideLoading();
 
@@ -184,10 +287,16 @@ async function checkConflicts() {
 
 // View mergeinfo
 async function viewMergeInfo() {
+  const workspace = state.get('workspace');
+  if (!workspace) {
+    UIComponents.showToast('请先选择工作目录', 'warning');
+    return;
+  }
+
   try {
     UIComponents.showLoading('加载 MergeInfo...');
 
-    const data = await apiClient.getMergeInfo();
+    const data = await apiClient.getMergeInfo(workspace);
 
     UIComponents.hideLoading();
 

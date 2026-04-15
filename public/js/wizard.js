@@ -16,6 +16,23 @@ const wizard = {
   init() {
     console.log('[Wizard] Initializing...');
 
+    // Check if workspace is selected
+    const workspace = state.get('workspace');
+    if (!workspace) {
+      UIComponents.showModal(
+        '未选择工作目录',
+        '请先在主页选择并验证 SVN 工作目录',
+        {
+          showCancel: false,
+          confirmText: '返回主页',
+          onConfirm: () => {
+            window.location.href = 'index.html';
+          }
+        }
+      );
+      return;
+    }
+
     // Connect WebSocket
     this.connectWebSocket();
 
@@ -229,10 +246,12 @@ const wizard = {
       UIComponents.showLoading('正在加载日志...');
       state.set('revisionsLoading', true);
 
+      const workspace = state.get('workspace');
       const response = await apiClient.queryRevisions({
         branchPath,
         limit: 100,
-        offset: 0
+        offset: 0,
+        cwd: workspace
       });
 
       const taskId = response.taskId;
@@ -489,7 +508,8 @@ const wizard = {
       });
 
       // Start merge
-      const response = await apiClient.startMerge(branchPath, revisions);
+      const workspace = state.get('workspace');
+      const response = await apiClient.startMerge(branchPath, revisions, workspace);
       const taskId = response.taskId;
       state.set('currentTaskId', taskId);
 
@@ -606,7 +626,8 @@ const wizard = {
     try {
       UIComponents.showLoading('检查冲突...');
 
-      const data = await apiClient.getConflicts();
+      const workspace = state.get('workspace');
+      const data = await apiClient.getConflicts(workspace);
 
       UIComponents.hideLoading();
 
@@ -659,7 +680,8 @@ const wizard = {
     try {
       UIComponents.showLoading('正在解决冲突...');
 
-      const response = await apiClient.resolveAllConflicts('theirs-full');
+      const workspace = state.get('workspace');
+      const response = await apiClient.resolveAllConflicts('theirs-full', workspace);
       const taskId = response.taskId;
 
       await wsClient.waitForTask(taskId);
@@ -770,7 +792,8 @@ const wizard = {
     try {
       UIComponents.showLoading('正在提交...');
 
-      const response = await apiClient.commit(message);
+      const workspace = state.get('workspace');
+      const response = await apiClient.commit(message, workspace);
       const taskId = response.taskId;
 
       await wsClient.waitForTask(taskId);
