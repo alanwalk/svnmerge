@@ -167,7 +167,7 @@ export class GlobalCache {
     query += ` ORDER BY revision DESC`;
 
     const stmt = this.db.prepare(query);
-    return stmt.all(...params) as RevisionCacheEntry[];
+    return stmt.all(...params) as unknown as RevisionCacheEntry[];
   }
 
   /**
@@ -182,7 +182,7 @@ export class GlobalCache {
     `);
     const info = stmt.run(cutoffTime);
 
-    return info.changes || 0;
+    return typeof info.changes === 'bigint' ? Number(info.changes) : (info.changes || 0);
   }
 
   /**

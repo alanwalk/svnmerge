@@ -4,6 +4,12 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
+    pool: 'forks',
+    poolOptions: {
+      forks: {
+        singleFork: true
+      }
+    },
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
@@ -15,6 +21,11 @@ export default defineConfig({
         '**/*.config.*',
         '**/mockData.ts'
       ]
+    }
+  },
+  server: {
+    deps: {
+      external: ['node:sqlite']
     }
   }
 });
